@@ -3,7 +3,7 @@ title: list で gh issue も非同期チェックし local issue に取り込む
 status: idea
 category: request
 created: 2026-06-18T21:30:00+09:00
-last_read:
+last_read: 2026-06-20T12:00:00+09:00
 open_entered:
 wip_entered:
 blocked_entered:
