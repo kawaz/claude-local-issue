@@ -1,5 +1,5 @@
 ---
-description: ローカル issue を 1 件読んで内容を返し、last_read を記録する。読んだら必ず「次の方針(pending / 対応 / 設計)を決めて update でステータス反映するまで」を呼び出し側の TODO に積ませる。read しっぱなしの放置を防ぐ。AI が特定 issue を読んで対応検討する時、ユーザが /local-issue:read で読みたい時に使う。
+description: issue 1 件を読んで last_read を記録し、呼び出し側 TODO に「次方針を update で反映するまで」を積ませる (read しっぱなし放置防止)。AI が特定 issue を読んで対応検討する時に呼ぶ。詳細仕様は /local-issue:local-issue を参照。
 argument-hint: '<slug or file> [--repo <name|path>]'
 model: haiku
 context: fork

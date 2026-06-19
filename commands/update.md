@@ -1,6 +1,5 @@
 ---
-name: update
-description: ローカル issue を更新する。status のみの変更(idea/open/wip/blocked/pending-sublimation)、本文の更新、または解決(close)に対応。status を変えると遷移を記録し index に反映。close 時は close_reason を string[] に正規化し、必要なら記録先(decisions/runbooks/journal)へ退避、未実装の DR があれば後続 issue を自動起票、issue を docs/issue/archive/ へ物理移動(削除しない)し index から除去する。対象パスだけを bump-semver vcs commit でローカル commit する。AI が issue の状態を進める / 本文を直す / 解決して片付ける時に呼ぶ。
+description: issue の status 変更 / 本文更新 / close (= archive 移動 + 未実装 DR の後続 issue 自動起票) を処理。AI が issue の状態を進める / 直す / 片付ける時に呼ぶ。詳細仕様は /local-issue:local-issue を参照。
 model: sonnet
 context: fork
 agent: general-purpose

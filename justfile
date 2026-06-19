@@ -23,10 +23,10 @@ lint-json:
 lint-sh:
     for f in hooks/*.sh; do bash -n "$f" && echo "ok: $f"; done
 
-# SKILL.md に frontmatter (--- 開始) があるか
+# SKILL.md (plugin root) と commands/*.md に frontmatter (--- 開始) があるか
 [private]
 lint-skills:
-    for f in skills/*/SKILL.md; do head -1 "$f" | grep -qx -- '---' && echo "ok: $f" || { echo "NG frontmatter: $f"; exit 1; }; done
+    for f in SKILL.md commands/*.md; do head -1 "$f" | grep -qx -- '---' && echo "ok: $f" || { echo "NG frontmatter: $f"; exit 1; }; done
 
 # 全 lint
 lint: lint-json lint-sh lint-skills

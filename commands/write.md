@@ -1,6 +1,5 @@
 ---
-name: write
-description: ローカル issue を起票する。起票先リポ (名 or パス) / slug / 本文を渡すと、docs/issue/YYYY-MM-DD-<slug>.md を docs-structure 準拠で生成し、本文から category (idea/bug/request/design/task/tech-memo) を判定して付与し、その issue 1 件のみを issue index に反映し、対象パスだけを bump-semver vcs commit でローカル commit する (push はしない)。クロスプロジェクト起票 (起票先 != カレントプロジェクト) にも対応。AI が他作業中に「気づいた点を担当プロジェクトの issue として残したい」時に呼ぶ。
+description: issue 1 件を起票 (category 自動判定、INDEX 反映、path 限定 commit、push なし、クロスプロジェクト対応)。AI が気づいた点を担当プロジェクトの issue として残したい時に呼ぶ。詳細仕様は /local-issue:local-issue を参照。
 model: sonnet
 context: fork
 agent: general-purpose
@@ -38,7 +37,7 @@ allowed-tools: Read, Write, Edit, Bash(bump-semver:*), Bash(git rev-parse:*), Ba
    - ファイル名の日付は `date +%Y-%m-%d`
    - frontmatter の時刻は **full ISO8601 + TZ**(`date -Iseconds`、例 `2026-06-18T10:00:00+09:00`)。日付のみ・TZ なしは使わない
    - `created` と `open_entered`(status=open 起票時)に同じ ISO8601 を入れる。status を idea で起票するなら `open_entered` は空のまま
-   - テンプレは `${CLAUDE_SKILL_DIR}/templates/issue.md` を読んで使う(本文に埋まったこの絶対パスは skill 起動時に展開済みで fork 先 subagent にも渡るため、`context: fork` 下でも Read できる)。**全 TS フィールドは full ISO8601、未到達の状態の `*-entered` は空**
+   - テンプレは `${CLAUDE_PLUGIN_ROOT}/templates/issue.md` を読んで使う(本文に埋まったこの絶対パスは command 起動時に展開済みで fork 先 subagent にも渡るため、`context: fork` 下でも Read できる)。**全 TS フィールドは full ISO8601、未到達の状態の `*-entered` は空**
 
 4. **issue index にこの 1 件のみ反映**
    - `<root>/docs/issue/INDEX.md` があれば、この 1 件のエントリ行を追加(既存 slug なら該当行のみ更新)。**他の行は読み取り以外で触らない**

@@ -1,7 +1,7 @@
 {
   "name": "local-issue",
   "description": "Local docs/issue/ tracker as a set of low-cost skills (write/list/read/update). Keeps issue CRUD, index maintenance, and VCS commit out of the main session context.",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "author": { "name": "kawaz" },
   "license": "MIT",
   "repository": "https://github.com/kawaz/claude-local-issue"
