@@ -4,7 +4,7 @@ description: ローカル issue を更新する。status のみの変更(idea/op
 model: sonnet
 context: fork
 agent: general-purpose
-allowed-tools: "Read Write Edit Bash(bump-semver vcs commit *) Bash(rm *) Bash(date *) Bash(cat *) Bash(ls *)"
+allowed-tools: Read, Write, Edit, Bash(bump-semver:*), Bash(rm:*), Bash(date:*), Bash(cat:*), Bash(ls:*), Bash(git rev-parse:*)
 ---
 
 # update — issue 更新 / 解決

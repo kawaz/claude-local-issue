@@ -4,7 +4,7 @@ description: ローカル issue を起票する。起票先リポ (名 or パス
 model: sonnet
 context: fork
 agent: general-purpose
-allowed-tools: "Read Write Edit Bash(bump-semver vcs commit *) Bash(git rev-parse *) Bash(date *) Bash(ls *) Bash(cat *)"
+allowed-tools: Read, Write, Edit, Bash(bump-semver:*), Bash(git rev-parse:*), Bash(date:*), Bash(ls:*), Bash(cat:*)
 ---
 
 # write — ローカル issue 起票
