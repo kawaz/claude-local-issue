@@ -35,9 +35,10 @@ docs/issue/ 配下の active issue を一覧する。**読むだけ。** frontma
    - 本文の最初の `# <title>` 行を「概要」として 80 文字まで切り出す(無ければ frontmatter `title`、それも無ければ slug)
 
 4. **放置日数を計算**
-   - 各 issue について `max(created, last_read, open_entered, wip_entered, blocked_entered, pending_entered, resolved_entered, discarded_entered)` の最大 ISO8601 を採用
-   - 現在時刻(`date -Iseconds`)との差を整数日に丸める
-   - frontmatter TS が全て空の異常 issue は「不明」として最後尾に
+   - 候補 TS フィールド: `created`, `last_read`, `open_entered`, `wip_entered`, `blocked_entered`, `pending_entered`, `resolved_entered`, `discarded_entered`
+   - これらのうち **空でない値の最大** の ISO8601 を採用 (= `created` だけ埋まっていれば「起票からの経過日数」が計算できる、`_entered` 系が空でも `?` にしない)
+   - 現在時刻 (`date -Iseconds`) との差を整数日に丸める
+   - **`created` も含めて全 TS が空** の異常 issue のみ「不明 (`?`)」として最後尾に (= 通常起こり得ない、migrate が `created` を補完する)
 
 5. **フィルタ適用**
    - `--status` / `--category` / `--stale-days` / `--unread-only` / `--include-archive` をすべて AND で適用
