@@ -3,7 +3,7 @@ description: issue の status 変更 / 本文更新 / close (= archive 移動 + 
 model: sonnet
 context: fork
 agent: general-purpose
-allowed-tools: Read, Write, Edit, Bash(bump-semver:*), Bash(rm:*), Bash(date:*), Bash(cat:*), Bash(ls:*), Bash(git rev-parse:*)
+allowed-tools: Read, Write, Edit, Grep, Bash(bump-semver:*), Bash(rm:*), Bash(date:*), Bash(cat:*), Bash(ls:*), Bash(grep:*), Bash(git rev-parse:*)
 ---
 
 # update — issue 更新 / 解決
@@ -35,10 +35,12 @@ status は `idea` / `open` / `wip` / `blocked` / `pending-sublimation` / `discar
 
 ## 本文更新フロー
 
-1. 該当 issue を Edit
-2. 本文が実質変わり category が変わるなら `Category:` 再判定
-3. INDEX.md の概要 1 行が古ければ更新
-4. commit(パス限定)
+1. **対象フレーズの出現箇所を事前 grep** (= DR-0005 Q5): body-edit の指示で「X を Y に置換」「X に Z 追記」等の操作が出てきた時、まず `Grep` ツール (or `Bash(grep:*)`) で X の出現箇所を全て確認する。親 AI が「2 箇所」と書いていても実際 5 箇所あることがある (= 9cell-trial で実証された取りこぼしパターン)
+2. **Edit を優先、Write 全文再書き込みは回避** (= DR-0005 Q2): 全置換は `Edit` の `replace_all: true` を優先。Write での全文再書き込みは大ファイルでコスト増 + 転記ミスリスクがあるため避ける。複数箇所の独立した変更も Edit を複数回呼ぶ
+3. 該当 issue を Edit
+4. 本文が実質変わり category が変わるなら `category:` 再判定
+5. INDEX.md の概要 1 行が古ければ更新
+6. commit(パス限定)
 
 ## close (status=resolved / discarded) フロー
 
