@@ -1,5 +1,6 @@
 ---
 description: issue 1 件を起票 (category 自動判定、INDEX 反映、path 限定 commit、push なし、クロスプロジェクト対応)。AI が気づいた点を担当プロジェクトの issue として残したい時に呼ぶ。詳細仕様は /local-issue:local-issue を参照。
+argument-hint: '<slug> <body> [--repo <name|path>] [--status <s>] [--origin <ref>]'
 model: sonnet
 context: fork
 agent: general-purpose

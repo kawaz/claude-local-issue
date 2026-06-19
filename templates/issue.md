@@ -36,12 +36,3 @@ origin: {自リポ TODO | 依頼元プロジェクト名}
 <!-- wip 時のみ -->
 
 - [ ] {次に手を付けるサブタスク}
-
-## 解決時の記録先
-
-- 単純なコード修正のみ: 記録不要 (commit message で足りる)
-- 設計判断を伴う: decisions/DR-NNNN-...md
-- 運用上の再発可能性: runbooks/<topic>.md
-- 経緯・ハマり所: journal/YYYY-MM-DD-<slug>.md
-
-close 時はこのファイルを docs/issue/archive/ へ移動する(削除しない。経緯を DB として残す)。

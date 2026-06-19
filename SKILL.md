@@ -1,7 +1,6 @@
 ---
 name: local-issue
 description: claude-local-issue plugin の全 sub-command (write/list/read/update/migrate) の用途・判断軸・入出力サマリ・設計指針。各 sub-command を呼ぶ前に「いつどれを使うか」「どんな引数を渡すか」が分からない時、frontmatter audience 区別 / migrate 必要性 / archive 運用 / クロスプロジェクト起票 の正本を確認したい時に読む。
-argument-hint: ''
 model: haiku
 context: fork
 agent: general-purpose

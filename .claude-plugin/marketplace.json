@@ -3,13 +3,13 @@
   "owner": { "name": "kawaz" },
   "metadata": {
     "description": "Local docs/issue/ tracker skills",
-    "version": "0.2.3",
+    "version": "0.2.4",
     "license": "MIT"
   },
   "plugins": [
     {
       "name": "local-issue",
-      "description": "docs/issue/ を低コストモデルのスキル群 (write/list/read/update) として回す。issue CRUD・index 保守・VCS commit をメインセッションのコンテキストから隔離する。",
+      "description": "docs/issue/ を低コストモデルのサブコマンド群 (write/list/read/update/migrate) として回す。issue CRUD・INDEX 保守・VCS commit をメインセッションのコンテキストから隔離する。Run docs/issue/ as low-cost-model sub-commands; isolate CRUD/index/commit from the main session.",
       "source": "./"
     }
   ]

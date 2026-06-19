@@ -32,9 +32,19 @@ case "$tool" in
     path="$(printf '%s' "$input" | grep -oE '"file_path"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed -E 's/.*"file_path"[[:space:]]*:[[:space:]]*"([^"]*)".*/\1/')"
     ;;
   Bash)
-    # tool_input.command 全体から docs/issue/<file>.md パターンを抽出 (= 1 つ目で代表)
     cmd="$(printf '%s' "$input" | grep -oE '"command"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed -E 's/.*"command"[[:space:]]*:[[:space:]]*"([^"]*)".*/\1/')"
-    path="$(printf '%s' "$cmd" | grep -oE '[^[:space:]"'"'"']*docs/issue/[^[:space:]"'"'"']+\.md' | head -1)"
+    # コマンド先頭が「読み書き系」のときのみ docs/issue/<file>.md を抽出。
+    # cmux-msg / git commit -m / git log 等で path 文字列を引用しただけのケースで
+    # 誤発火しないため (= false positive 緩和、known limitation: 複合コマンドは検出外)
+    head_cmd="$(printf '%s' "$cmd" | sed -E 's/^[[:space:]]+//' | grep -oE '^[a-zA-Z][a-zA-Z0-9_./+-]*' | head -1)"
+    case "$head_cmd" in
+      cat|head|tail|less|more|bat|view|nl|tac|rev|wc|file|stat|grep|fgrep|egrep|rg|ag|ack|sed|awk|cut|paste|sort|uniq|jq|yq|nano|vim|vi|emacs|cp|mv|rm|chmod|chown|touch|truncate|tee|ln)
+        path="$(printf '%s' "$cmd" | grep -oE '[^[:space:]"'"'"']*docs/issue/[^[:space:]"'"'"']+\.md' | head -1)"
+        ;;
+      *)
+        exit 0
+        ;;
+    esac
     ;;
 esac
 

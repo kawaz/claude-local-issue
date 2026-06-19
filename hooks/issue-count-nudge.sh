@@ -10,7 +10,9 @@
 #  - **件数のみで判定し、stale(放置期間)判定はしない**。stale はファイル mtime では測れず
 #    (vcs 操作で mtime はあてにならない)、frontmatter TS の max で測るべきもの。その算出は
 #    list コマンドに一元化する。nudge は「見にいくきっかけ」を作るだけで、質的判断は list に委ねる。
-set -euo pipefail
+# issue-access-guard と同じ哲学で `-e` と `pipefail` を外す
+# (grep 非マッチ = source/cwd キー不在で全体が exit 1 になる事故を防ぐ、fail-open 寄り)
+set -u
 
 input="$(cat)"
 
@@ -21,6 +23,10 @@ esac
 
 cwd="$(printf '%s' "$input" | grep -oE '"cwd"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed -E 's/.*"([^"]*)".*/\1/')"
 root="${cwd:-${CLAUDE_PROJECT_DIR:-$PWD}}"
+
+# threshold 環境変数の numeric validation (= 非数値や空文字で `[: -ge ...]` が落ちないよう防御)
+CLAUDE_LOCAL_ISSUE_COUNT_THRESHOLD="${CLAUDE_LOCAL_ISSUE_COUNT_THRESHOLD:-5}"
+[[ "$CLAUDE_LOCAL_ISSUE_COUNT_THRESHOLD" =~ ^[0-9]+$ ]] || CLAUDE_LOCAL_ISSUE_COUNT_THRESHOLD=5
 
 issue_dir="$root/docs/issue"
 [ -d "$issue_dir" ] || exit 0

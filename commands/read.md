@@ -55,8 +55,10 @@ allowed-tools: Read, Edit, Bash(ls:*), Bash(cat:*), Bash(date:*), Bash(git rev-p
 
 ## 報告フォーマット
 
+### active を読んだ場合 (= デフォルト)
+
 ```
-<root>/docs/issue/<file> を読了 (last_read=<ISO8601>、archive 経由は除く)
+<root>/docs/issue/<file> を読了 (last_read=<ISO8601>)
 status=<...>, category=<...>, blocked_by=<...>
 直近 transition: <最も新しい *_entered>
 
@@ -68,4 +70,18 @@ status=<...>, category=<...>, blocked_by=<...>
 - [ ] update でステータス反映: <pending-sublimation / wip 開始 / blocked / discarded / resolved> を選んで実行
 ```
 
-呼び出し側 (= 親セッション) はこの TODO 行を必ず TODO list に追加すること (= read しっぱなしを防ぐ this skill の責務)。
+### archive を読んだ場合 (= 過去経緯参照)
+
+```
+<root>/docs/issue/archive/<file> を archive から読了 (last_read 更新なし、commit なし、TODO 化なし)
+status=<resolved/discarded>, category=<...>, close_reason=<...>
+最終 transition: <resolved_entered or discarded_entered>
+
+---
+<frontmatter + 本文 全文>
+---
+```
+
+archive 経路では last_read 記録も commit も行わず、次方針 TODO も積まない (= 過去経緯の参照は read しっぱなしでよい)。
+
+呼び出し側 (= 親セッション) は active の場合のみ TODO 行を必ず TODO list に追加すること (= read しっぱなしを防ぐ this skill の責務)。
