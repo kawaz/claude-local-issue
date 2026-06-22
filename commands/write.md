@@ -4,7 +4,7 @@ argument-hint: '<slug> <body> [--repo <name|path>] [--status <s>] [--origin <ref
 model: sonnet
 context: fork
 agent: general-purpose
-allowed-tools: Read, Write, Edit, Bash(bump-semver:*), Bash(git rev-parse:*), Bash(date:*), Bash(ls:*), Bash(cat:*)
+allowed-tools: Read, Write, Edit, Bash(bump-semver:*), Bash(date:*), Bash(ls:*), Bash(cat:*)
 ---
 
 # write — ローカル issue 起票
@@ -23,7 +23,7 @@ allowed-tools: Read, Write, Edit, Bash(bump-semver:*), Bash(git rev-parse:*), Ba
 
 1. **起票先リポ root を確定**
    - repo が絶対パスならそれ。リポ名なら `~/.local/share/repos/github.com/kawaz/<name>/main` 等の規約パスを解決(存在確認)。省略時は `$CLAUDE_PROJECT_DIR`
-   - `git rev-parse --show-toplevel`(対象ディレクトリで実行)で root を正規化
+   - `bump-semver vcs get root`(対象ディレクトリで実行)で root を正規化(git/jj 両対応の VCS root 取得 API)
 
 2. **category を判定** (本文から、下記 enum のいずれか 1 つ)
    - `idea` — 投げ込み・思いつき・要検討の種

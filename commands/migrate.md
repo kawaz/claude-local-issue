@@ -4,7 +4,7 @@ argument-hint: '[--dry-run] [--repo <name|path>]'
 model: sonnet
 context: fork
 agent: general-purpose
-allowed-tools: Read, Write, Edit, Bash(bump-semver:*), Bash(git rev-parse:*), Bash(git log:*), Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(find:*), Bash(grep:*)
+allowed-tools: Read, Write, Edit, Bash(bump-semver:*), Bash(git log:*), Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(find:*), Bash(grep:*)
 ---
 
 # migrate — docs/issue/ 全体の正本化 (bulk migration)
@@ -21,7 +21,7 @@ allowed-tools: Read, Write, Edit, Bash(bump-semver:*), Bash(git rev-parse:*), Ba
 ### 1. 対象 root を確定
 
 - `--repo` があれば解決、無ければ `$CLAUDE_PROJECT_DIR`
-- `cd <root> && git rev-parse --show-toplevel` で正規化
+- `cd <root> && bump-semver vcs get root` で正規化(git/jj 両対応の VCS root 取得 API)
 - `<root>/docs/issue/` が存在しなければ「docs/issue/ がない、migrate 対象なし」を報告して終了
 
 ### 2. 走査対象を列挙

@@ -4,7 +4,7 @@ argument-hint: '<slug or file> [--repo <name|path>]'
 model: haiku
 context: fork
 agent: general-purpose
-allowed-tools: Read, Edit, Bash(ls:*), Bash(cat:*), Bash(date:*), Bash(git rev-parse:*), Bash(bump-semver:*)
+allowed-tools: Read, Edit, Bash(ls:*), Bash(cat:*), Bash(date:*), Bash(bump-semver:*)
 ---
 
 # read — ローカル issue を 1 件読む
@@ -24,7 +24,7 @@ allowed-tools: Read, Edit, Bash(ls:*), Bash(cat:*), Bash(date:*), Bash(git rev-p
 
 1. **対象 root を確定**
    - `--repo` があれば解決、無ければ `$CLAUDE_PROJECT_DIR`
-   - `cd <root> && git rev-parse --show-toplevel` で正規化
+   - `cd <root> && bump-semver vcs get root` で正規化(git/jj 両対応の VCS root 取得 API)
 
 2. **対象 file を特定**
    - `$0` が `.md` で終わる path (相対 or 絶対) ならそれを採用 (存在確認)

@@ -4,7 +4,7 @@ argument-hint: '[--status <s>] [--category <c>] [--stale-days <n>] [--unread-onl
 model: haiku
 context: fork
 agent: general-purpose
-allowed-tools: Read, Bash(ls:*), Bash(cat:*), Bash(grep:*), Bash(date:*), Bash(git rev-parse:*)
+allowed-tools: Read, Bash(ls:*), Bash(cat:*), Bash(grep:*), Bash(date:*), Bash(bump-semver:*)
 ---
 
 # list — ローカル issue 一覧
@@ -24,7 +24,7 @@ docs/issue/ 配下の active issue を一覧する。**読むだけ。** frontma
 
 1. **対象 root を確定**
    - `--repo` 引数があれば解決(リポ名なら規約パス、絶対パスならそのまま)、無ければ `$CLAUDE_PROJECT_DIR`
-   - `cd <root> && git rev-parse --show-toplevel` で正規化(解決できなければ「<root> は git リポではない」を報告して終了)
+   - `cd <root> && bump-semver vcs get root` で正規化(git/jj 両対応の VCS root 取得 API。解決できなければ「<root> は VCS リポではない」を報告して終了)
 
 2. **走査対象を列挙**
    - `<root>/docs/issue/*.md` から `INDEX.md` と `README*.md` を除外
