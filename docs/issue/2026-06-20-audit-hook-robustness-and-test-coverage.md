@@ -1,11 +1,11 @@
 ---
 title: hook の堅牢化 + test カバレッジ拡張
-status: open
+status: wip
 category: task
 created: 2026-06-20T00:31:38+09:00
 last_read:
 open_entered: 2026-06-20T00:31:38+09:00
-wip_entered:
+wip_entered: 2026-06-22T18:27:35+09:00
 blocked_entered:
 pending_entered:
 discarded_entered:
@@ -29,7 +29,7 @@ origin: ペルソナ監査 (Security/QA) からの集約 issue
 
 - **C1 (Security)**: `allowed-tools: Bash(rm:*)` が任意 path への `rm` を許可。`Bash(rm docs/issue/*)` 相当に絞る必要。同様に `Bash(bump-semver:*)` をサブコマンド粒度に
 - **C3 (Security)**: SessionStart hook の `find` が `-type f` で symlink target をカウントする (= `-type l` ガード追加)
-- **W1 (Security) / C3-C4 (QA)**: hook の JSON parse が grep/sed で実装。Bash command 内に `\"docs/issue/foo.md\"` (JSON escape) があると path 抽出が false negative、`"tool_name":"Bash"` リテラルが tool_input 内にあると tool 判定 false positive。**`python3` or `jq` での JSON parse に統一**
+- **W1 (Security) / C3-C4 (QA)**: hook の JSON parse が grep/sed で実装。Bash command 内に `\"docs/issue/foo.md\"` (JSON escape) があると path 抽出が false negative、`"tool_name":"Bash"` リテラルが tool_input 内にあると tool 判定 false positive。**`jq` での JSON parse に統一**
 - **W4 (Security)**: templates/issue.md の prompt injection 対策 (counter-prompt + hash 固定)
 - **W5 (Security)**: cp+rm 分割の atomicity 欠如、`mv` (atomic) + `--staged` で再検討
 - **W6 (Security)**: `--repo <name>` の strict validation 必須 (`[a-z0-9_-]+`)
@@ -47,11 +47,11 @@ origin: ペルソナ監査 (Security/QA) からの集約 issue
 - **W8-W10 (QA)**: frontmatter TS の自己ループ / re-open での `*_entered` 上書き仕様の正本化 (= DR 追加検討)
 - **W11 (QA)**: slug 入力 validation 不在 (= `..` / `/` / `\n` 含む slug で path traversal)
 - **W13 (QA)**: `bump-semver vcs is clean docs/issue/` の挙動マトリクス未確認 (= empirical-verification rule 適用要)
-- **W14 (QA)**: hook の grep × sed × python3 三重起動 = 1 python script に統合してパフォーマンス改善
+- **W14 (QA)**: hook の grep × sed × python3 多重起動 (= jq 統一で 1 process に集約)
 
 ## 受け入れ条件
 
-- [ ] JSON parse を python3 統一、bypass / false positive 全 OK
+- [ ] JSON parse を jq 統一、bypass / false positive 全 OK
 - [ ] slug / `--repo` の strict validation 実装
 - [ ] justfile test に 9+ ケースのマトリクス
 - [ ] archive 配下を直接 Read しても nudge 出ない
@@ -62,7 +62,7 @@ origin: ペルソナ監査 (Security/QA) からの集約 issue
 
 <!-- wip 時のみ -->
 
-- [ ] Phase 1: JSON parse 堅牢化 (python3 統一 or python3 script 化)
+- [ ] Phase 1: JSON parse 堅牢化 (jq 統一)
 - [ ] Phase 2: path validation 強化 (slug `^[a-z0-9][a-z0-9-]{0,80}$`、`--repo` 正規表現)
 - [ ] Phase 3: test マトリクス拡張 (9-12 ケース)
 - [ ] Phase 4: archive nudge 除外追加
@@ -75,10 +75,15 @@ origin: ペルソナ監査 (Security/QA) からの集約 issue
 
 ```bash
 input="$(cat)"
-tool="$(printf '%s' "$input" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("tool_name",""))' 2>/dev/null)"
+tool="$(printf '%s' "$input" | jq -r '.tool_name // empty' 2>/dev/null)"
 ```
 
-または、hook 全体を 1 つの `python3` スクリプトに置換 (= W14 のパフォーマンス改善も同時達成)。
+hook の input parse と output JSON 構築を全部 `jq` 化 (= grep/sed 撤去、bypass を構造的に防ぐ + W14 のパフォーマンス改善も同時達成)。
+
+```bash
+# output JSON 構築も jq で正しくエスケープ
+printf '%s' "$msg" | jq -Rs '{hookSpecificOutput:{hookEventName:"PreToolUse",additionalContext:.}}'
+```
 
 ### Phase 2: path validation 強化
 
@@ -90,6 +95,14 @@ tool="$(printf '%s' "$input" | python3 -c 'import json,sys; d=json.load(sys.stdi
 
 justfile の `test` を 9-12 ケースに拡張:
 Read happy / Bash happy / Bash with `\"` / Glob (素通り) / INDEX.md (素通り) / archive path / SessionStart empty stdin / SessionStart resume 等
+
+## 採用方針 (= kawaz 判断、2026-06-22 確定)
+
+- python3 ではなく **jq** を使う (= 鵜呑みミスの訂正、TS+bun 案も overkill として却下)
+- 既存 hook 2 本と justfile の python3 利用 4 箇所を jq に置き換え
+- README の Requires も python3 → jq
+
+これは v0.2.5 として実装予定 (= Phase 1-A 〜 1-E)。本 issue の Phase 1 が完了する。
 
 ## 解決時の記録先
 
