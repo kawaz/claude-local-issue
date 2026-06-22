@@ -2,6 +2,15 @@
 
 All notable changes per release. Follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) conventions.
 
+## [0.2.9] - 2026-06-22
+
+### Added
+- justfile に bump-semver v0.40.1 の `check-on-default-branch` gate + `sync` / `promote` task を追加 (= DR-0038 Adoption pattern、4 リポ統一の同型)
+- `set script-interpreter := ["bash", "-euo", "pipefail"]` 追加 (= [script] attribute 用)
+
+### Changed
+- `push` task の deps を `ci` から `check-on-default-branch ci` に変更 (= worktree 違いなら lint 等を回さず即終了)
+
 ## [0.2.7] - 2026-06-22
 
 ### Added
