@@ -1,6 +1,6 @@
 ---
 title: docs 整合性 + DR 番号付け直し + 翻訳 freshness の CI 強制
-status: wip
+status: resolved
 category: task
 created: 2026-06-20T00:33:30+09:00
 last_read:
@@ -9,10 +9,10 @@ wip_entered: 2026-06-22T18:53:20+09:00
 blocked_entered:
 pending_entered:
 discarded_entered:
-resolved_entered:
+resolved_entered: 2026-06-22T19:31:43+09:00
 discard_reason:
 pending_reason:
-close_reason:
+close_reason: ["implemented:DESIGN.md-en-sync(237ade3)", "implemented:DR-0004-reserved-in-INDEX(237ade3)", "implemented:CHANGELOG.md-new(237ade3)", "implemented:ci-task-translation-check(237ade3)", "implemented:STRUCTURE.md-dedup(237ade3)", "implemented:term-unification-skill-to-sub-command(4fa1577)"]
 blocked_by:
 origin: ペルソナ監査 (TechWriter) からの集約 issue
 ---
@@ -95,12 +95,3 @@ DR-0003 で commands に統一したが、hook script / SKILL.md / DESIGN.md 内
 - [ ] Phase 3: 用語統一 (skill → sub-command、grep -r で全 .md / .sh 検出)
 - [ ] Phase 4: justfile ci に check-outdated-translations 組込み
 - [ ] Phase 5: CHANGELOG.md 新設と v0.1.0〜v0.2.4 の履歴整備
-
-## 解決時の記録先
-
-- 単純なコード修正のみ: 記録不要 (commit message で足りる)
-- 設計判断を伴う: decisions/DR-NNNN-...md
-- 運用上の再発可能性: runbooks/<topic>.md
-- 経緯・ハマり所: journal/YYYY-MM-DD-<slug>.md
-
-close 時はこのファイルを docs/issue/archive/ へ移動する(削除しない。経緯を DB として残す)。
