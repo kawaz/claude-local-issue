@@ -41,6 +41,6 @@ claude-rules-personal の docs-knowledge-flow / docs-structure は、issue を�
 
 ## 関連
 
-- DR-0001 (command/skill 隔離)
+- DR-0001 (sub-command 隔離)
 - rules-revision-after-plugin issue (rules 側追従)
 - docs-knowledge-flow / docs-structure (発展元の rules)

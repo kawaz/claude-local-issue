@@ -39,7 +39,7 @@ justfile                   task runner(canonical: kawaz/bump-semver に準拠)
 
 ## 配置判断 (= DR-0003)
 
-- **command と skill は runtime 同一機構**。配置 layout は慣習であり、機能差はない (claude-plugin-reference §1)
+- **Claude Code の `commands/` と `skills/` 配置は runtime 上同一機構**。配置 layout は慣習であり、機能差はない (claude-plugin-reference §1)。本 plugin は全 sub-command を `commands/` 統一
 - **ユーザ invocable な sub-command は全部 `commands/<name>.md` に一般語 (= 短縮形) で置く**
   - namespace 衝突は補完 fuzzy match で吸収、実行時は `/<plugin>:<name>` で明確
   - 短縮形 (`/list` `/write`) を直打ちしても自前 command が候補に出る

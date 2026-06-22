@@ -9,7 +9,7 @@ allowed-tools: Read, Write, Edit, Bash(bump-semver:*), Bash(git log:*), Bash(dat
 
 # migrate — docs/issue/ 全体の正本化 (bulk migration)
 
-旧形式 issue (frontmatter 欠落 / 本文行で status を持つ / INDEX 不在 等) を新形式 (= write skill が生成する形) へ揃える。**1 件ごとではなく全体走査**。
+旧形式 issue (frontmatter 欠落 / 本文行で status を持つ / INDEX 不在 等) を新形式 (= write sub-command が生成する形) へ揃える。**1 件ごとではなく全体走査**。
 
 ## 入力 ($ARGUMENTS)
 

@@ -1,6 +1,6 @@
 # claude-local-issue justfile
 # canonical task runner は kawaz/bump-semver に準拠。
-# このリポは plugin (skills + hooks) なので lint は JSON 妥当性 + bash 構文 + skill frontmatter。
+# このリポは plugin (sub-commands + hooks) なので lint は JSON 妥当性 + bash 構文 + sub-command frontmatter。
 
 set shell := ["bash", "-euo", "pipefail", "-c"]
 set positional-arguments

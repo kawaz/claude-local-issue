@@ -84,4 +84,4 @@ status=<resolved/discarded>, category=<...>, close_reason=<...>
 
 archive 経路では last_read 記録も commit も行わず、次方針 TODO も積まない (= 過去経緯の参照は read しっぱなしでよい)。
 
-呼び出し側 (= 親セッション) は active の場合のみ TODO 行を必ず TODO list に追加すること (= read しっぱなしを防ぐ this skill の責務)。
+呼び出し側 (= 親セッション) は active の場合のみ TODO 行を必ず TODO list に追加すること (= read しっぱなしを防ぐ this sub-command の責務)。
