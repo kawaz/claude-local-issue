@@ -34,8 +34,10 @@ CLAUDE_LOCAL_ISSUE_COUNT_THRESHOLD="${CLAUDE_LOCAL_ISSUE_COUNT_THRESHOLD:-5}"
 issue_dir="$root/docs/issue"
 [ -d "$issue_dir" ] || exit 0
 
-# active issue 数 (INDEX/README を除外、archive 非カウント)
-count="$(find "$issue_dir" -maxdepth 1 -type f -name '*.md' \
+# active issue 数 (INDEX/README を除外、archive 非カウント、symlink 経由は除外)
+# Security 監査 C3: `-type f` だけだと symlink target が file なら数えてしまう。
+# `! -lname '*'` で symlink を除外し、real な regular file のみカウント。
+count="$(find "$issue_dir" -maxdepth 1 -type f ! -lname '*' -name '*.md' \
   ! -iname 'INDEX.md' ! -iname 'README.md' ! -iname 'README-*.md' \
   2>/dev/null | wc -l | tr -d ' ')"
 count="${count:-0}"

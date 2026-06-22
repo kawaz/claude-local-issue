@@ -4,7 +4,7 @@ argument-hint: '<slug> [--status <s>] [--reason <r>] [--body-edit <body>] [--blo
 model: sonnet
 context: fork
 agent: general-purpose
-allowed-tools: Read, Write, Edit, Grep, Bash(bump-semver:*), Bash(mv:*), Bash(date:*), Bash(cat:*), Bash(ls:*), Bash(grep:*)
+allowed-tools: Read, Write, Edit, Grep, Bash(bump-semver vcs:*), Bash(mv:*), Bash(date:*), Bash(cat:*), Bash(ls:*), Bash(grep:*)
 ---
 
 # update — issue 更新 / 解決
@@ -14,11 +14,21 @@ allowed-tools: Read, Write, Edit, Grep, Bash(bump-semver:*), Bash(mv:*), Bash(da
 ## 入力
 
 - **repo**: 対象リポ。省略時はカレントプロジェクト
+  - リポ名指定時は **`^[a-z0-9_-]+$`** にマッチすること (= 不正なら reject、`..` や `/` でのパストラバーサル防止)
+  - 絶対パスは `realpath` で正規化
 - **slug** (or file): 対象 issue
+  - slug 形式の場合の正規表現: **`^[a-z0-9][a-z0-9-]{0,80}$`** (= write skill と同じ厳密 validation、不正なら reject)
+  - file path 形式 (`.md` 終端) の場合は path として直接解決
 - **status** (任意): 新しい status。idea/open/wip/blocked/pending-sublimation、`discarded`(棄却・要 discard_reason)、または `resolved`(= 解決・削除フロー)
-- **reason** (任意): discarded / pending-sublimation / close 時の自由文。スキルが string[] に正規化して対応する *-reason / close_reason に記録
+- **reason** (任意): discarded / pending-sublimation / close 時の自由文。sub-command が string[] に正規化して対応する *-reason / close_reason に記録
 - **body-edit** (任意): 本文への変更内容
 - **blocked_by** (任意): status=blocked 時の依存先
+
+## 入力 validation (= 不正なら即 reject、フロー実行しない)
+
+- `slug` (or file の slug 部分) が `^[a-z0-9][a-z0-9-]{0,80}$` にマッチしない → 「slug が不正」を報告して終了
+- `repo` がリポ名指定で `^[a-z0-9_-]+$` にマッチしない → 「repo 名が不正」を報告して終了
+- `status` が enum (idea/open/wip/blocked/pending-sublimation/discarded/resolved) のいずれでもない → 「status が不正」を報告して終了
 
 ## status 変更フロー
 

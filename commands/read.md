@@ -4,7 +4,7 @@ argument-hint: '<slug or file> [--repo <name|path>]'
 model: haiku
 context: fork
 agent: general-purpose
-allowed-tools: Read, Edit, Bash(ls:*), Bash(cat:*), Bash(date:*), Bash(bump-semver:*)
+allowed-tools: Read, Edit, Bash(ls:*), Bash(cat:*), Bash(date:*), Bash(bump-semver vcs:*)
 ---
 
 # read — ローカル issue を 1 件読む
@@ -14,11 +14,17 @@ allowed-tools: Read, Edit, Bash(ls:*), Bash(cat:*), Bash(date:*), Bash(bump-semv
 ## 入力 ($ARGUMENTS)
 
 - `$0`: slug または file path (必須)
-  - slug の例: `initial-open-items`
+  - slug の例: `initial-open-items` (= 正規表現 `^[a-z0-9][a-z0-9-]{0,80}$`)
   - file path の例: `docs/issue/2026-06-18-initial-open-items.md` / 絶対パス
-- `--repo <name|path>` (任意): 対象リポ。リポ名なら `~/.local/share/repos/github.com/kawaz/<name>/main` 規約。省略時は `$CLAUDE_PROJECT_DIR`
+- `--repo <name|path>` (任意): 対象リポ
+  - リポ名指定時は **`^[a-z0-9_-]+$`** にマッチすること (= 不正なら reject)
+  - リポ名なら `~/.local/share/repos/github.com/kawaz/<name>/main` 規約。省略時は `$CLAUDE_PROJECT_DIR`
 
-`$0` が空なら「slug or file が必要」を報告して終了。
+## 入力 validation (= 不正なら即 reject)
+
+- `$0` が空 → 「slug or file が必要」を報告して終了
+- `$0` が slug 形式で `^[a-z0-9][a-z0-9-]{0,80}$` にマッチしない → 「slug が不正」を報告して終了
+- `--repo` がリポ名指定で `^[a-z0-9_-]+$` にマッチしない → 「repo 名が不正」を報告して終了
 
 ## 固定フロー (順に実行、逸脱しない)
 

@@ -4,7 +4,7 @@ argument-hint: '<slug> <body> [--repo <name|path>] [--status <s>] [--origin <ref
 model: sonnet
 context: fork
 agent: general-purpose
-allowed-tools: Read, Write, Edit, Bash(bump-semver:*), Bash(date:*), Bash(ls:*), Bash(cat:*)
+allowed-tools: Read, Write, Edit, Bash(bump-semver vcs:*), Bash(date:*), Bash(ls:*), Bash(cat:*)
 ---
 
 # write — ローカル issue 起票
@@ -14,15 +14,24 @@ allowed-tools: Read, Write, Edit, Bash(bump-semver:*), Bash(date:*), Bash(ls:*),
 ## 入力
 
 - **repo**: 起票先リポ(名 or 絶対パス)。省略時はカレントプロジェクト
-- **slug**: ファイル名に使う slug (英小文字 + ハイフン)
+  - リポ名指定時は **`^[a-z0-9_-]+$`** にマッチすること (= 不正なら reject、`..` や `/` でのパストラバーサル防止)
+  - 絶対パスは `realpath` で正規化
+- **slug**: ファイル名に使う slug
+  - 正規表現: **`^[a-z0-9][a-z0-9-]{0,80}$`** (= 英小文字始まり + 英数字とハイフン、最大 81 文字)
+  - **不正な slug は reject し、ファイル生成も commit もしない** (= path traversal / 空 slug / 大文字混入 / 特殊文字 / 過長を全て弾く)
 - **body**: issue 本文(自然文。概要・背景など)
 - **status** (任意, default `open`): idea / open / wip / blocked / pending-sublimation
 - **origin** (任意): 自リポ TODO か、依頼元プロジェクト名か
 
 ## 固定フロー (順に実行、逸脱しない)
 
+0. **引数 validation** (= 不正なら即 reject、step 1 以降に進まない)
+   - `slug` が `^[a-z0-9][a-z0-9-]{0,80}$` にマッチしない → 「slug が不正 (= 英小文字始まり + 英数字/ハイフン、最大 81 文字)」を報告して終了
+   - `repo` がリポ名指定で `^[a-z0-9_-]+$` にマッチしない → 「repo 名が不正」を報告して終了
+   - `body` が空文字列 → 「body が空」を報告して終了
+
 1. **起票先リポ root を確定**
-   - repo が絶対パスならそれ。リポ名なら `~/.local/share/repos/github.com/kawaz/<name>/main` 等の規約パスを解決(存在確認)。省略時は `$CLAUDE_PROJECT_DIR`
+   - repo が絶対パスならそれ (= `realpath` で正規化)。リポ名なら `~/.local/share/repos/github.com/kawaz/<name>/main` 等の規約パスを解決(存在確認)。省略時は `$CLAUDE_PROJECT_DIR`
    - `bump-semver vcs get root`(対象ディレクトリで実行)で root を正規化(git/jj 両対応の VCS root 取得 API)
 
 2. **category を判定** (本文から、下記 enum のいずれか 1 つ)

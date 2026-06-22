@@ -4,7 +4,7 @@ argument-hint: '[--dry-run] [--repo <name|path>]'
 model: sonnet
 context: fork
 agent: general-purpose
-allowed-tools: Read, Write, Edit, Bash(bump-semver:*), Bash(git log:*), Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(find:*), Bash(grep:*)
+allowed-tools: Read, Write, Edit, Bash(bump-semver vcs:*), Bash(git log:*), Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(find:*), Bash(grep:*)
 ---
 
 # migrate — docs/issue/ 全体の正本化 (bulk migration)
@@ -14,7 +14,13 @@ allowed-tools: Read, Write, Edit, Bash(bump-semver:*), Bash(git log:*), Bash(dat
 ## 入力 ($ARGUMENTS)
 
 - `--dry-run` (任意): 走査と差分提示のみ、ファイル変更 / commit しない (= 適用前の確認用)
-- `--repo <name|path>` (任意): 対象リポ。リポ名なら `~/.local/share/repos/github.com/kawaz/<name>/main` 規約。省略時は `$CLAUDE_PROJECT_DIR`
+- `--repo <name|path>` (任意): 対象リポ
+  - リポ名指定時は **`^[a-z0-9_-]+$`** にマッチすること (= 不正なら reject、`..` や `/` でのパストラバーサル防止)
+  - `~/.local/share/repos/github.com/kawaz/<name>/main` 規約で解決。省略時は `$CLAUDE_PROJECT_DIR`
+
+## 入力 validation (= 不正なら即 reject)
+
+- `--repo` がリポ名指定で `^[a-z0-9_-]+$` にマッチしない → 「repo 名が不正」を報告して終了
 
 ## 固定フロー (順に実行、逸脱しない)
 

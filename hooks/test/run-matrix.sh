@@ -66,6 +66,10 @@ run_test "Bash sed issue" '{"tool_name":"Bash","tool_input":{"command":"sed -n 1
 # bypass 解消 (= 旧 grep+sed では false negative だったが、jq parse で nudge 発火)
 run_test "Bash JSON-escaped path" '{"tool_name":"Bash","tool_input":{"command":"cat \"docs/issue/foo.md\""},"cwd":"/x"}' nudge
 
+# archive 配下は素通り (= 過去経緯参照、read しっぱなしで良い)
+run_test "Read archive issue" '{"tool_name":"Read","tool_input":{"file_path":"/x/docs/issue/archive/2026-06-19-foo.md"},"cwd":"/x"}' silent
+run_test "Bash cat archive" '{"tool_name":"Bash","tool_input":{"command":"cat docs/issue/archive/foo.md"},"cwd":"/x"}' silent
+
 # INDEX / README は素通り
 run_test "Read INDEX" '{"tool_name":"Read","tool_input":{"file_path":"/x/docs/issue/INDEX.md"},"cwd":"/x"}' silent
 run_test "Read README.md" '{"tool_name":"Read","tool_input":{"file_path":"/x/docs/issue/README.md"},"cwd":"/x"}' silent

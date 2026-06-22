@@ -58,6 +58,10 @@ case "$path" in
   *docs/issue/*.md) : ;;
   *) exit 0 ;;
 esac
+# archive 配下は過去経緯参照として直接アクセス OK → 促さない (= read しっぱなしで良い、仕様 SKILL.md と整合)
+case "$path" in
+  *docs/issue/archive/*) exit 0 ;;
+esac
 # INDEX / README は command が正当に触る → 促さない
 case "$path" in
   *docs/issue/INDEX.md|*docs/issue/README.md|*docs/issue/README-*.md) exit 0 ;;

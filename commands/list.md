@@ -4,7 +4,7 @@ argument-hint: '[--status <s>] [--category <c>] [--stale-days <n>] [--unread-onl
 model: haiku
 context: fork
 agent: general-purpose
-allowed-tools: Read, Bash(ls:*), Bash(cat:*), Bash(grep:*), Bash(date:*), Bash(bump-semver:*)
+allowed-tools: Read, Bash(ls:*), Bash(cat:*), Bash(grep:*), Bash(date:*), Bash(bump-semver vcs:*)
 ---
 
 # list — ローカル issue 一覧
@@ -18,7 +18,15 @@ docs/issue/ 配下の active issue を一覧する。**読むだけ。** frontma
 - `--stale-days <n>` — 放置日数 n 日以上のみ
 - `--unread-only` — `last_read` が空、または `--stale-days` 指定時はその日数を超えるもののみ
 - `--include-archive` — `docs/issue/archive/` 配下も含める。デフォルトは active のみ
-- `--repo <name|path>` — 対象リポ。リポ名なら `~/.local/share/repos/github.com/kawaz/<name>/main` 規約で解決。省略時は `$CLAUDE_PROJECT_DIR`
+- `--repo <name|path>` — 対象リポ。リポ名指定時は **`^[a-z0-9_-]+$`** にマッチすること (= 不正なら reject)。`~/.local/share/repos/github.com/kawaz/<name>/main` 規約で解決。省略時は `$CLAUDE_PROJECT_DIR`
+- `--stale-days <n>` の `n` は非負整数のみ受理 (= 不正なら無視 + 注意 1 行)
+
+## 入力 validation (= 不正なら即 reject)
+
+- `--repo` がリポ名指定で `^[a-z0-9_-]+$` にマッチしない → 「repo 名が不正」を報告して終了
+- `--status` の値が enum (idea/open/wip/blocked/pending-sublimation) のいずれでもない → 不正値を無視 + 注意 1 行
+- `--category` の値が enum (idea/bug/request/design/task/tech-memo) のいずれでもない → 不正値を無視 + 注意 1 行
+- `--stale-days` が非負整数でない → 無視 + 注意 1 行
 
 ## 固定フロー (順に実行、逸脱しない)
 
