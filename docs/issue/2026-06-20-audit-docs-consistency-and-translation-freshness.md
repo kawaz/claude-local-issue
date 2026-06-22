@@ -1,11 +1,11 @@
 ---
 title: docs 整合性 + DR 番号付け直し + 翻訳 freshness の CI 強制
-status: open
+status: wip
 category: task
 created: 2026-06-20T00:33:30+09:00
 last_read:
 open_entered: 2026-06-20T00:33:30+09:00
-wip_entered:
+wip_entered: 2026-06-22T18:53:20+09:00
 blocked_entered:
 pending_entered:
 discarded_entered:
@@ -18,6 +18,25 @@ origin: ペルソナ監査 (TechWriter) からの集約 issue
 ---
 
 # docs 整合性 + DR 番号付け直し + 翻訳 freshness の CI 強制
+
+## 進捗 (2026-06-22)
+
+用語掃除 (skill → sub-command) は v0.2.6 (commit 4fa1577) で完了。
+
+掃除した範囲:
+- hook script 内の「skill」表記
+- SKILL.md 内の「skill」表記
+- DESIGN.md 内の「skill」表記
+
+保持した固有名詞:
+- `SKILL.md` ファイル名自体
+- `skills/` ディレクトリ名
+- Claude Code の「skill」概念を指す固有名詞としての使用箇所
+
+残作業は以下の 3 つに絞られた:
+- DESIGN.md 英訳完全同期
+- CHANGELOG 整備
+- CI に check-outdated-translations 組込み
 
 ## 概要
 
