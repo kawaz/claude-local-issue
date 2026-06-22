@@ -35,10 +35,10 @@ lint: lint-json lint-sh lint-skills
 test: lint
     @bash hooks/test/run-matrix.sh
 
-# CI entry
-ci: lint test
+# CI entry (= 翻訳ペア freshness も含む)
+ci: lint test check-outdated-translations
 
-# translation pair freshness (bump-semver vcs outdated) — bump-semver があれば
+# translation pair freshness (bump-semver vcs outdated) — README / DESIGN の ja/en ペア
 [private]
 check-outdated-translations:
     if command -v bump-semver >/dev/null 2>&1; then \
@@ -50,6 +50,6 @@ bump-version level="patch":
     bump-semver "$1" VERSION --write --quiet
     bump-semver vcs commit -m "Release v$(bump-semver get VERSION)" VERSION
 
-# push with gates
-push: ci check-outdated-translations
+# push with gates (= ci が翻訳 freshness も内包するので別途呼ばなくて OK)
+push: ci
     bump-semver vcs push --branch main --jj-bookmark-auto-advance

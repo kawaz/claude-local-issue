@@ -47,11 +47,6 @@ justfile                   task runner(canonical: kawaz/bump-semver に準拠)
 - **plugin root `SKILL.md`** で全体ガイド (= AI への入口)。各 sub-command の description を 1 行に圧縮できる
 - **agent は不採用**: issue CRUD は定型フローで独立ペルソナ不要、隔離と低コストモデルは command frontmatter (= `model + context: fork + agent: general-purpose`) で達成
 
-## frontmatter audience の区別 (= DR-0003)
+## frontmatter audience の区別
 
-| field / 場所 | audience | 用途 |
-|---|---|---|
-| `description` | AI | command 発見 / 自動 invoke trigger / listing 常時 context (= 1-2 文に圧縮) |
-| `argument-hint` | ユーザ | 補完中の `[...]` グレー hint (= 引数の選択肢 1 行、人間が打つ材料) |
-| 本文 (`---` 以下) | AI (invoke 時) | standing instructions、固定フロー |
-| 本 plugin root SKILL.md | AI | 全体ガイドの entry point、詳細仕様の正本 |
+正本は plugin root [`SKILL.md`](../SKILL.md) の §「frontmatter audience の区別」、または [DR-0003](./decisions/DR-0003-commands-unification-and-migrate.md) (e)。本 file からの重複は避けるためここでは link のみ残す (= race 防止)。
