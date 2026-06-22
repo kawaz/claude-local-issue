@@ -15,7 +15,7 @@ list:
 [private]
 lint-json:
     for f in .claude-plugin/plugin.json .claude-plugin/marketplace.json hooks/hooks.json; do \
-      python3 -c "import json,sys;json.load(open('$f'))" && echo "ok: $f"; \
+      jq empty "$f" && echo "ok: $f"; \
     done
 
 # hook script の bash 構文チェック
@@ -31,10 +31,9 @@ lint-skills:
 # 全 lint
 lint: lint-json lint-sh lint-skills
 
-# hook の実機スモークテスト
+# hook の実機スモークテスト (= jq ベース hook の正値 + 負値 + bypass マトリクス、9+ ケース)
 test: lint
-    @echo '{"tool_name":"Read","tool_input":{"file_path":"/x/docs/issue/2026-01-01-a.md"},"cwd":"/x"}' \
-      | ./hooks/issue-access-guard.sh | python3 -c "import json,sys;json.load(sys.stdin);print('access-guard ok')"
+    @bash hooks/test/run-matrix.sh
 
 # CI entry
 ci: lint test

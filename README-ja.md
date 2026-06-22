@@ -33,7 +33,7 @@
 /local-issue:migrate              # 適用
 ```
 
-要件: `PATH` に `bump-semver` (= パス限定 vcs commit driver)、`python3` (= hook 内 JSON エスケープに使用)、`bash`、`git` or `jj`。macOS / Linux。
+要件: `PATH` に `bump-semver` (= パス限定 vcs commit driver)、`jq` (= hook 内の構造化 JSON parse / 構築に使用)、`bash`、`git` or `jj`。macOS / Linux。
 
 ## サブコマンド
 

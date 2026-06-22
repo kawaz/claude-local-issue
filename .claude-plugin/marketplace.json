@@ -3,7 +3,7 @@
   "owner": { "name": "kawaz" },
   "metadata": {
     "description": "Local docs/issue/ tracker skills",
-    "version": "0.2.4",
+    "version": "0.2.5",
     "license": "MIT"
   },
   "plugins": [

@@ -33,7 +33,7 @@ This plugin isolates each operation into a **low-cost-model sub-command** (`mode
 /local-issue:migrate              # apply
 ```
 
-Requires: `bump-semver` on `PATH` (path-scoped vcs commit driver), `python3` (used by hooks for JSON escape), `bash`, `git` or `jj`. macOS / Linux.
+Requires: `bump-semver` on `PATH` (path-scoped vcs commit driver), `jq` (used by hooks for structured JSON parse/build), `bash`, `git` or `jj`. macOS / Linux.
 
 ## Sub-commands
 
