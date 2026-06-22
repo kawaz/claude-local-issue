@@ -62,7 +62,7 @@
 ## 設計の前提 (重要)
 
 - サブコマンドは **commit まで** — push はしない (届ける判断は別レイヤ)
-- commit は **パス限定** (`bump-semver vcs commit -m ... <paths>` or `cp + rm` 後の `--staged`、`-a / git add .` は使わない)
+- commit は **パス限定** (`bump-semver vcs commit -m ... <paths>`、`-a / git add .` は使わない)
 - INDEX / 命名規則 / ja-en 等の docs 規約は全てサブコマンド内に閉じ、起票元は覚えなくてよい
 - close 済 issue は **`docs/issue/archive/` へ物理移動**、削除ではない (= 経緯 DB として残す)。`list` はデフォルト `archive/` を見ない (`--include-archive` で含む)
 - 全 1 件コマンドは **1 issue ファイル + INDEX のみ**を触る (= 他 issue / 全 index は触らない、発火スコープ = 作業スコープ)

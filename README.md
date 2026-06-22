@@ -61,7 +61,7 @@ All operations are scoped to a single issue (except `migrate`, the only bulk ope
 ## Design assumptions
 
 - Sub-commands stop at **commit** — no push (delivery is a separate layer).
-- Commits are **path-scoped** (`bump-semver vcs commit -m ... <paths>` or `--staged` after a `cp + rm` move; never `-a / git add .`).
+- Commits are **path-scoped** (`bump-semver vcs commit -m ... <paths>`; never `-a / git add .`).
 - Index / naming / ja-en conventions live inside the sub-commands; the caller need not know them.
 - Closed issues are **moved to `docs/issue/archive/`**, not deleted (= "history DB"). `list` excludes `archive/` by default (`--include-archive` to include).
 - All single-issue commands touch **exactly one issue file + INDEX**; never the whole index or other issues (firing scope = work scope).
