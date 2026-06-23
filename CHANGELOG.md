@@ -2,6 +2,12 @@
 
 All notable changes per release. Follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) conventions.
 
+## [0.2.10] - 2026-06-23
+
+### Fixed
+- **`/local-issue:read` の空ファイル作成 bug** (= 別 session 報告 2026-06-23、bump-semver の旧形式 issue 連続 read で cwd に 6 個の空 file `blocked_entered:` `last_read:` 等が作られた): commands/read.md に「frontmatter 欠落時は Step 4/5 をスキップして報告のみ」を明示、「やらないこと」に shell redirect / 対象 file 以外への書き込み禁止を追記
+- `allowed-tools` の `Bash(date:*)` を `Bash(date -Iseconds)` に絞り (= 任意引数を排除、`> "key:"` のような shell redirect の許可表面を縮小)
+
 ## [0.2.9] - 2026-06-22
 
 ### Added

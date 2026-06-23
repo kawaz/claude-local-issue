@@ -4,7 +4,7 @@ argument-hint: '<slug or file> [--repo <name|path>]'
 model: haiku
 context: fork
 agent: general-purpose
-allowed-tools: Read, Edit, Bash(ls:*), Bash(cat:*), Bash(date:*), Bash(bump-semver vcs:*)
+allowed-tools: Read, Edit, Bash(ls:*), Bash(cat:*), Bash(date -Iseconds), Bash(bump-semver vcs:*)
 ---
 
 # read — ローカル issue を 1 件読む
@@ -40,9 +40,17 @@ allowed-tools: Read, Edit, Bash(ls:*), Bash(cat:*), Bash(date:*), Bash(bump-semv
 
 3. **Read**: frontmatter + 本文全文
 
-4. **last_read を更新** (archive を読んだ場合はスキップ)
+3.5. **frontmatter 検証** (= 欠落時の安全装置)
+   - 該当 file の先頭が `---` で始まらない場合は **frontmatter 欠落** とみなす (= 旧形式 issue / migrate 未適用)
+   - **その場合は Step 4 (last_read 更新) と Step 5 (commit) をスキップ**して以下の報告で終了:
+     - 「<file> は frontmatter 欠落 (旧形式)。`/local-issue:migrate` で正本化を推奨。本文は下記を参照、last_read 更新と commit はスキップ」
+     - 続けて本文全文を出力
+   - **frontmatter を勝手に作らない** (= 後段 step を実行しない、Bash で空 touch しない)
+
+4. **last_read を更新** (archive を読んだ場合 + frontmatter 欠落の場合はスキップ)
    - `date -Iseconds` で現在時刻 (full ISO8601 + TZ、例 `2026-06-19T16:30:00+09:00`) を取得
    - 該当 file の frontmatter `last_read:` を Edit で上書き (空でも上書き)
+   - **Edit が失敗した場合は Step 5 もスキップして報告のみで終了** (= 代替経路で touch しない)
    - INDEX.md は触らない (last_read は INDEX 列に出ない)
 
 5. **path 限定 commit** (archive を読んだ場合はスキップ)
@@ -58,6 +66,8 @@ allowed-tools: Read, Edit, Bash(ls:*), Bash(cat:*), Bash(date:*), Bash(bump-semv
 - archive 移動 / 後続起票しない
 - push しない
 - 他 issue を読む / 走査しない (= 1 件スコープ)
+- **Bash の shell redirect (`>`, `>>`, `tee`) で新規 file を作成しない** (= frontmatter 欠落の fallback として frontmatter key を file path として touch しないこと、過去事例 issue 2026-06-23 で cwd に空 file 6 個作られる事故あり)
+- **対象 file 以外への書き込みをしない** (= `date -Iseconds > "key:"` のような誤った redirect も禁止、新規 file 作成は Write tool 経由のみで、かつ本 sub-command は新規 file を作る用途を持たない)
 
 ## 報告フォーマット
 
