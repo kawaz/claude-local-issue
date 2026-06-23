@@ -3,7 +3,7 @@ title: read skill が frontmatter キー名を cwd に空ファイルとして t
 status: open
 category: bug
 created: 2026-06-23T11:42:30+09:00
-last_read:
+last_read: 2026-06-23T11:46:23+09:00
 open_entered: 2026-06-23T11:42:30+09:00
 wip_entered:
 blocked_entered:
