@@ -1,6 +1,6 @@
 ---
 title: read skill が frontmatter キー名を cwd に空ファイルとして touch する事故
-status: open
+status: resolved
 category: bug
 created: 2026-06-23T11:42:30+09:00
 last_read: 2026-06-23T11:46:23+09:00
@@ -9,10 +9,10 @@ wip_entered:
 blocked_entered:
 pending_entered:
 discarded_entered:
-resolved_entered:
+resolved_entered: 2026-06-23T11:49:50+09:00
 discard_reason:
 pending_reason:
-close_reason:
+close_reason: ["implemented:commands/read.md-fix(924a2c2)", "implemented:allowed-tools-narrow(924a2c2)", "split:bump-semver-frontmatter-migration-task-for-bump-semver-session"]
 blocked_by:
 origin: 自リポ TODO
 ---
