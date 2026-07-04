@@ -64,3 +64,37 @@ frontmatter 更新は手動で行う必要があった。
 本 issue は hyoui セッション (部外者) からのフラグで、plugin 内部の実装は読んでいない
 (commands/*.md の frontmatter と本文冒頭のみ確認)。観測も 1 セッション内 2 回のみ。
 採否・原因特定は担当側で裏取りの上で判断してほしい。
+
+## 2026-07-04 追観測 (cache-warden セッション、部外者)
+
+同環境 (plugin 0.2.10 / Claude Code / メイン Fable / personal 面) の別セッションで
+同型現象を 4 呼出で追観測。「未検証の切り分け」の update / migrate の項が埋まる:
+
+1. `Skill(skill="local-issue:read", args="2026-07-03-docs-issue-triage-sweep")`
+   → fork は read command の用途説明を返しつつ「ユーザからの明示的な指示がない場合、
+   勝手に呼び出すべきではない」と no-op 終了。last_read 記録なし
+2. `Skill(skill="local-issue:read", args="docs-issue-triage-sweep --repo cache-warden")`
+   → fork は「I've received the system context ... but I don't see a specific task」と
+   no-op 終了 (この回は command doc への言及すらなし)
+3. `Skill(skill="local-issue:update", args="docs-issue-triage-sweep --status wip --repo cache-warden")`
+   → **書込系での副作用を観測**。fork は `--status wip` を list 的フィルタと誤解釈
+   (「status: wip の issue は 0 件」と報告) した上で、単一 issue スコープを離れ、
+   メインセッションの ambient context (task list の「13 件 triage 棚卸し」) から任務を
+   推測して **13 issue 全件の triage + status 変更 + close 2 件 + 新規起票 1 件 +
+   INDEX 書換 + commit 2 件** を実行した。結果は監査の上で採用できる品質だったが、
+   update.md の単一 issue スコープ契約は破られている
+4. `Skill(skill="local-issue:migrate", args=なし)` → 正常動作 (9 file 正規化 + INDEX
+   再生成 + path 限定 commit)。args 不要 command かつ直前会話が migrate 文脈だった
+   ため、$ARGUMENTS 欠落の影響を受けなかったと解釈できる
+
+観測からの示唆 (裏取りは担当側で):
+
+- $ARGUMENTS 非伝搬は haiku (read/list) に限らず sonnet (update) でも起きる
+- model tier で症状が分岐する模様: haiku fork は一般応答で no-op、sonnet fork は
+  ambient session context から任務を創作して実行する
+  (= **書込系 command では意図しない大規模副作用のリスク**)
+- fork には session context (task list / 直前会話) が見えている。command 本文は
+  見える場合と見えない場合がある (観測 1 は用途説明あり、観測 2 はなし)
+
+利用側 workaround: cache-warden セッションでは read/update の契約 (last_read 記録 /
+path 限定 commit / 単一 issue スコープ) を手動で踏んで代替した。
