@@ -98,3 +98,18 @@ frontmatter 更新は手動で行う必要があった。
 
 利用側 workaround: cache-warden セッションでは read/update の契約 (last_read 記録 /
 path 限定 commit / 単一 issue スコープ) を手動で踏んで代替した。
+
+### 2026-07-06 追記 (同セッション、挙動変化の観測)
+
+同じ plugin 0.2.10 のまま、`local-issue:write` の fork が **$ARGUMENTS を正しく受け取る**
+ようになっていた (2 呼出で確認):
+
+1. `Skill(skill="local-issue:write", args="<slug> --repo cache-warden")` (body なし)
+   → fork は slug と --repo を認識した上で「body が空」と **正しく validation reject**
+   (勝手に本文を創作しない旨まで明言)
+2. body 込みの再呼出 → 正常起票 (frontmatter / INDEX / path 限定 commit まで契約どおり)
+
+2026-07-04 の観測 (read×2 no-op / update の全面誤動作) との差分は plugin version では
+なく、セッションの Claude Code process 再起動を複数回挟んだこと。**fork への
+$ARGUMENTS 伝搬は harness 側要因 (バージョン / 状態依存) の可能性が高まった**。
+裏取りは担当側で (Claude Code の version 変化と突き合わせると切り分けが進むはず)。
