@@ -1,7 +1,8 @@
 ---
 description: issue 1 件を読んで last_read を記録し、呼び出し側 TODO に「次方針を update で反映するまで」を積ませる (read しっぱなし放置防止)。AI が特定 issue を読んで対応検討する時に呼ぶ。詳細仕様は /local-issue:local-issue を参照。
 argument-hint: '<slug or file> [--repo <name|path>]'
-model: haiku
+model: sonnet
+effort: low
 context: fork
 agent: general-purpose
 allowed-tools: Read, Edit, Bash(ls:*), Bash(cat:*), Bash(date -Iseconds), Bash(bump-semver vcs:*)

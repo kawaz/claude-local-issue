@@ -2,6 +2,7 @@
 description: issue の status 変更 / 本文更新 / close (= archive 移動 + 未実装 DR の後続 issue 自動起票) を処理。AI が issue の状態を進める / 直す / 片付ける時に呼ぶ。詳細仕様は /local-issue:local-issue を参照。
 argument-hint: '<slug> [--status <s>] [--reason <r>] [--body-edit <body>] [--blocked-by <ref>] [--repo <name|path>]'
 model: sonnet
+effort: low
 context: fork
 agent: general-purpose
 allowed-tools: Read, Write, Edit, Grep, Bash(bump-semver vcs:*), Bash(mv:*), Bash(date:*), Bash(cat:*), Bash(ls:*), Bash(grep:*)

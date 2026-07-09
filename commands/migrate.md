@@ -2,6 +2,7 @@
 description: docs/issue/ 全体を frontmatter/INDEX 正本化する bulk migration (旧形式吸収、category 自動判定、INDEX 再生成、まとめて commit)。AI が「frontmatter 欠落」「INDEX 不在」「本文行で status を持つ」等の旧形式 issue を発見した時に呼ぶ。詳細仕様は /local-issue:local-issue を参照。
 argument-hint: '[--dry-run] [--repo <name|path>]'
 model: sonnet
+effort: medium
 context: fork
 agent: general-purpose
 allowed-tools: Read, Write, Edit, Bash(bump-semver vcs:*), Bash(git log:*), Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(find:*), Bash(grep:*)
