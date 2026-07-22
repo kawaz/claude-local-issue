@@ -112,8 +112,9 @@ close_reason を走査し、**`dr/*` 要素があり、かつ `implemented` が�
   cd <root>
   bump-semver vcs commit -m "issue(close): <slug> -> archive" docs/issue/<file> docs/issue/archive/<file> docs/issue/INDEX.md
   ```
-  - `mv` 後の旧 path (`docs/issue/<file>`) を指定すると delete として扱われ、新 path (`docs/issue/archive/<file>`) は add として扱われる
+  - **3 path すべて必須。旧 path (`docs/issue/<file>`) を省略しない**。mv 済みでファイルが存在しなくても path 指定は有効で、指定すると delete として commit に入る (jj は自動で rename `R` に畳む)。省略すると削除が working copy に取り残され、利用側で追補 commit が毎回必要になる (2026-07-21〜22 に 2 リポで再発した既知事故)
   - 後続 issue 起票 (Step 3) が別 commit で先に行われる場合、close commit と分離して構わない (= bump-semver vcs commit を 2 度叩く)
+- **commit 後検証 (必須)**: `bump-semver vcs status` (or `jj status` / `git status`) で `docs/issue/<file>` の削除が working copy に残っていないことを確認。残っていたら `bump-semver vcs commit -m "issue(close): <slug> -> archive (remove old path)" docs/issue/<file>` で即追補する
 - 報告: 「<slug> を close(status=<resolved/discarded>)。reason=<…>、archive へ移動、後続起票=<DR-XXXX 実装 issue / なし>、commit 済み」
 
 ## やらないこと
