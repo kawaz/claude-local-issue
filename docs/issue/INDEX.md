@@ -4,7 +4,6 @@ active な issue の一覧。close 済みは archive/ にあり、ここには�
 
 | date | category | status | slug | 概要 |
 |---|---|---|---|---|
-| 2026-07-22 | bug | wip | [close-archive-mv-source-not-committed](./2026-07-22-close-archive-mv-source-not-committed.md) | update close の archive 移動で mv 元削除が commit から取りこぼされる (2 例再現、部外者フラグ) |
 | 2026-07-10 | bug | open | [worktree-cwd-repo-misresolution](./2026-07-10-worktree-cwd-repo-misresolution.md) | worktree 越境利用時に対象リポを誤認する (セッション cwd 優先の解決が原因か、部外者フラグ) |
 | 2026-06-20 | task | idea | [audit-nitpicks-and-improvements](./2026-06-20-audit-nitpicks-and-improvements.md) | ペルソナ監査 3 名 (TechWriter/Security/QA) の軽微改善・nitpick 集約 |
 | 2026-07-06 | bug | open | [index-sort-not-enforced-on-write-update](./2026-07-06-index-sort-not-enforced-on-write-update.md) | write / update が INDEX.md のソート規約を守らない (部外者フラグ) |
