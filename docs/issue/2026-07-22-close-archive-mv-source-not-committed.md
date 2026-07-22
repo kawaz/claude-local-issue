@@ -1,11 +1,11 @@
 ---
 title: update close の archive 移動で mv 元削除が commit から取りこぼされる (2 例再現)
-status: open
+status: wip
 category: bug
 created: 2026-07-22T15:41:14+09:00
 last_read: 2026-07-22T16:00:31+09:00
 open_entered: 2026-07-22T15:41:14+09:00
-wip_entered:
+wip_entered: 2026-07-22T16:01:20+09:00
 blocked_entered:
 pending_entered:
 discarded_entered:
