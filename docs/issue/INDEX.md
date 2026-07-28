@@ -5,6 +5,7 @@ active な issue の一覧。close 済みは archive/ にあり、ここには�
 | date | category | status | slug | 概要 |
 |---|---|---|---|---|
 | 2026-07-28 | bug | open | [read-list-fork-invocation-drops-args](./2026-07-28-read-list-fork-invocation-drops-args.md) | read と list の forked 実行が args を受け取らず即終了する (update/write は正常、部外者フラグ) |
+| 2026-07-29 | bug | open | [close-archive-move-drops-file-deletion-from-commit](./2026-07-29-close-archive-move-drops-file-deletion-from-commit.md) | close 実行時に元ファイルの削除が commit から漏れることがある (残留 diff を stale/無関係と誤判定する報告も) |
 | 2026-07-10 | bug | open | [worktree-cwd-repo-misresolution](./2026-07-10-worktree-cwd-repo-misresolution.md) | worktree 越境利用時に対象リポを誤認する (セッション cwd 優先の解決が原因か、部外者フラグ) |
 | 2026-06-20 | task | idea | [audit-nitpicks-and-improvements](./2026-06-20-audit-nitpicks-and-improvements.md) | ペルソナ監査 3 名 (TechWriter/Security/QA) の軽微改善・nitpick 集約 |
 | 2026-07-06 | bug | open | [index-sort-not-enforced-on-write-update](./2026-07-06-index-sort-not-enforced-on-write-update.md) | write / update が INDEX.md のソート規約を守らない (部外者フラグ) |
