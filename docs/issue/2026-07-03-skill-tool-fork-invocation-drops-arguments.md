@@ -113,3 +113,21 @@ path 限定 commit / 単一 issue スコープ) を手動で踏んで代替し�
 なく、セッションの Claude Code process 再起動を複数回挟んだこと。**fork への
 $ARGUMENTS 伝搬は harness 側要因 (バージョン / 状態依存) の可能性が高まった**。
 裏取りは担当側で (Claude Code の version 変化と突き合わせると切り分けが進むはず)。
+
+### 2026-07-28 追観測 (kawaz/kuu セッション、部外者)
+
+同型現象を継続観測。頻度データが追加された:
+
+- 約 9 回の invoke 中 3 回で発生 (read×2, list×1)。args の書式は key=value 形式
+  (`project=... slug=...`) でも自然文でも発生し、**同内容で再 invoke すると成功する
+  (再現は確率的)**
+- write は正常動作を維持 (2026-07-06 追記の観測と整合)
+
+ワークアラウンド: 空振りしたら同 args で再 invoke、read の代替は直接 Read
+(last_read 更新が失われる欠点あり)。
+
+確認観点のフラグ (裏取りは担当側で):
+
+- fork 実行された subagent の transcript 冒頭に args が含まれるか。含まれないなら
+  harness 側 issue の可能性が高い
+- 発生率が特定の呼び出しパターン (list vs read vs write) に偏っているか
