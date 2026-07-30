@@ -44,6 +44,19 @@ commit のパス指定に元パスが含まれるか否かが実行毎に揺れ�
 ワークアラウンド (依頼元側で実施中): close 後に `jj status` / `git status` を
 確認し、残留 D を別 commit で固定。
 
+追加観測 (llm-gateway リポ, cross-project report, 2026-07-29〜30, 別セッション):
+
+- 1 回目: close 後に `jj status` で `D docs/issue/2026-07-28-cred-sharing-refresh-race-staleness.md` が残留
+- 2 回目: 2 件同時 close 後に `D docs/issue/2026-07-29-refresh-task-panic-strands-in-flight.md` と
+  `D docs/issue/2026-07-30-client-errors-not-logged.md` が残留
+- いずれも archive/ 側のコピーと INDEX 更新は commit 済み。ワークアラウンドは同じ
+  (残留 D を後追いで `jj commit -m "issue(close): ... 取りこぼしを回収" <paths>` して回収)
+
+追加の仮説 (裏取り要、既存仮説に加えて): close の実装が「cp → 新パスと INDEX を
+パス指定 commit → rm」の順だと、rm が commit の後になり削除が @ に残る。パス指定
+commit に旧パス (削除) を含めるか、mv で rename を 1 操作にすれば安定するのでは。
+ただし skill 実行 agent の裁量 (手順の揺れ) 由来の可能性もあり断定はしない。
+
 ## 受け入れ条件
 
 - [ ] update (close) の実装で、archive 移動と commit のパス指定を突き合わせ、
