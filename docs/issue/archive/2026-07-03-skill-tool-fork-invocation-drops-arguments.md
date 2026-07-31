@@ -12,7 +12,7 @@ discarded_entered:
 resolved_entered: 2026-07-31T13:40:00+09:00
 discard_reason:
 pending_reason:
-close_reason: ["implemented: 混在していた 2 現象を分離し、plugin 側の現象 (fork 先が ambient な session context から任務を創作する) を全 5 sub-command の「実行 task (これが唯一の入力)」block で修正 (commit dfee3eb)。$ARGUMENTS の substitution を 1 箇所に固定し、文脈からの入力補完を禁止、空引数は read/write/update が reject・list/migrate が既定操作。契約テストを commands/test/run-contracts.sh に追加 (commit 03d5c81)","harness 側残余: $ARGUMENTS が fork 先に伝搬しないことがある確率的挙動 (2026-07-28 観測で約 9 回中 3 回、同 args の再 invoke で成功) は本リポに修正箇所が無く未解決。入力契約により被害は明示 reject に封じ込め済み。ワークアラウンドは同 args で再 invoke"]
+close_reason: ["implemented: 全 5 sub-command の frontmatter 直後に「実行 task (これが唯一の入力)」block を置き、$ARGUMENTS の substitution を 1 箇所に固定、command 名 / session context / TODO list からの入力補完を禁止、空引数は read/write/update が reject・list/migrate が既定操作 (commit dfee3eb)。契約テストを commands/test/run-contracts.sh に追加 (commit 03d5c81)","PoC で原因を確定 (claude v2.1.220、temp command 計 24 run): $ARGUMENTS は fork 先で展開されており ($0/$1 も含め 3/3)、表題の「fork が引数を落とす」仮説は棄却。実体は展開値が実行すべき task として認識されないことで、修正前構造 V1 は 9/9 空振り、実行 task block を持つ V2 は 8/9 実行。支配的要因は本文冒頭に実行命令があるか否か","残余は分離起票: 対策が指示遵守依存で成功率は確率的 (V2 でも 9 回中 1 回は出力形式を逸脱)、dfee3eb 後の実 command 再検証も未実施 -> 2026-07-31-fork-input-contract-compliance-is-probabilistic"]
 blocked_by:
 origin: hyoui セッション (a7761122) の dogfooding 観測
 ---
@@ -150,16 +150,43 @@ commit 2 件** を実行した。
 `## 入力 ($ARGUMENTS)` という見出しで仕様の途中に substitution token を置いており、
 「今このターンで実行すべき task は何か」を一意に固定する記述が無かった。
 
-### 現象 2: `$ARGUMENTS` が fork 先に伝搬しないことがある (= harness 側)
+### 現象 2: 展開された引数が「実行すべき task」として認識されない (= これも plugin 側)
+
+観測されてきた挙動:
 
 - 2026-07-06 追記: plugin version 据え置きのまま `write` の伝搬が**正常化**した
   (差分は Claude Code process の再起動)
 - 2026-07-28 追観測: 約 9 回中 3 回で発生し、**同内容で再 invoke すると成功する**
   (= 確率的、args の書式に依存しない)
 
-plugin 側の定義を変えずに成否が変動し、かつ同一入力で再現しない以上、
-**この plugin のリポジトリ内には修正箇所が存在しない**。上流 (Claude Code の
-Skill tool → fork 実行の引数受け渡し) の事象として扱う。
+本 issue の表題は「fork が引数を落とす」だが、**この字義どおりの仮説は PoC で棄却された**
+(下記)。実体は「`$ARGUMENTS` の展開は起きているが、展開された値が subagent にとって
+**実行すべき task として認識されない**」であり、修正箇所は harness ではなく
+command 定義側にある。
+
+#### PoC による裏取り (2026-07-31、claude v2.1.220)
+
+本リポと plugin cache を変更せず、temp project の `.claude/commands/` に
+`context: fork` / `agent: general-purpose` / `model: haiku` の検証用 command を置き、
+`claude -p '/<cmd> <args>'` で計 24 run 実行した結果:
+
+| 検証 | 構造 | 結果 |
+|---|---|---|
+| 逐語 echo probe | 本文を逐語出力させる | **3/3 で展開**。`$ARGUMENTS`=`alpha bravo`、`$0`=`alpha`、`$1`=`bravo`。説明文の途中に置いた `$0` も展開された |
+| V1 (修正前構造) | 引数が `## 入力 ($ARGUMENTS)` 節と条件文の中にしか現れない | **9/9 で空振り**。引数あり / なし / 解釈不能のいずれでも「実行すべき task が見当たらない」旨を返して終了し、フローを 1 歩も実行しない |
+| V2 (修正後構造) | 冒頭に明示 task 行 (「受け取った引数: … 上記を対象に実行せよ」) | **8/9 で実行** (引数あり 3/3、引数なし 3/3 で正しく空判定、解釈不能 2/3) |
+
+確定した結論:
+
+1. **引数は fork 先に届いている**。harness が引数を落としているのではない
+2. **支配的要因は「本文冒頭に実行を促す命令があるか否か」**。V1 構造は本文全体を
+   「仕様のダンプ」と読んで停止する失敗モードを持ち、9/9 で再現する
+3. 引数が空のとき `$0` が **command 名に補完される揺れ**も観測された (3 回中 1 回、
+   `/v3` の `$0` が `v3` になった)。「command 名から補完しない」規定が必要なことの裏付け
+
+なお PoC は temp command による対照実験であり、本リポの実 command 同士
+(read/list vs update/write) を実行比較したものではない。「read/list だけが壊れて
+見えた」件の解釈は下記のとおり別の説明が付く。
 
 #### 「read/list だけが壊れている」に見えた件
 
@@ -195,9 +222,10 @@ substitute する形に統一した:
   過剰 reject しない**ようにし、未知 flag / 2 つ目以降の位置引数は reject
 - `--repo` 省略時の root 解決に cwd fallback を明記
 
-これにより現象 2 が起きた場合の挙動も変わる: args が届かなくても、fork 先は
-周辺文脈から任務を創作せず **明示的に reject して終了する** (= 現象 2 は残るが、
-書込系 command での意図しない大規模副作用という最悪の帰結は塞がれる)。
+この構造は PoC の V2 (= 8/9 で実行) そのものであり、V1 が 9/9 で踏んでいた
+失敗モード (本文全体を仕様ダンプと読んで停止する) を「引数行より下の記述は
+仕様であって入力ではない」の一文で直接塞いでいる。空引数時の `$0` の
+command 名補完も「command 名 / ファイル名から補完しない」で名指しで禁止した。
 
 ## 検証結果
 
@@ -213,9 +241,11 @@ substitute する形に統一した:
 指示書 (= LLM への自然言語 prompt) は振る舞いそのものを再実行できないため、
 固定できるのは「壊れると即事故になる文言」までである点は割り切り。
 
-## 残余 (= 本リポの外)
+## 残余
 
-現象 2 は未解決のまま残る。利用側のワークアラウンドは変わらず
-**同じ args で再 invoke** (確率的なため大抵は 2 回目で通る)。
-上流の挙動が変わったかを追う場合は、fork された subagent の transcript 冒頭に
-引数行が含まれるかを確認するのが起点になる。
+**再現条件は塞いだが、構造的な完全解決ではない**。対策は指示遵守に依存するため
+成功率は確率的で、PoC の V2 構造でも 9 回中 1 回はフローを実行しつつ出力形式を
+外した (= 手順を復唱した)。また dfee3eb 後の**実 command での再検証は未実施**。
+
+この残余は `2026-07-31-fork-input-contract-compliance-is-probabilistic` として
+分離起票した (回帰の検出手段の見通しも含む)。

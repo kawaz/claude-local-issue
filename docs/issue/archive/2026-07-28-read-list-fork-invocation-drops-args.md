@@ -54,7 +54,7 @@ frontmatter を読む。この場合 last_read の記録はできない。
 
 ## 受け入れ条件
 
-- [ ] read/list の forked 実行時に args (省略時含む) が正しく task として
+- [x] read/list の forked 実行時に args (省略時含む) が正しく task として
       渡ることを確認 (再現環境で tool_uses > 0 になる)
 - [x] update/write との command 定義差分を特定し、原因を記録
 
@@ -72,10 +72,12 @@ frontmatter を読む。この場合 last_read の記録はできない。
   (低 tier fork は no-op で目立ち、高 tier fork は文脈から任務を創作して完走して
   しまうため一見正常に見える) による観測バイアスだった。2026-07-04 には update でも
   同型の伝搬失敗が観測されている
-- **args が task として渡ることの確認**: 未達のまま。plugin 定義を変えずに成否が
-  変動し同一入力で再現しないため harness 側の事象と判断し、統合先の「残余」節に
-  記録した。plugin 側は入力契約 (= 全 5 command の「実行 task」block) で、args が
-  届かない場合に文脈補完せず明示 reject するところまでを担保している
+- **args が task として渡ることの確認**: 統合先の PoC で確定した。**args は
+  fork 先に届いており** (`$ARGUMENTS` / `$0` / `$1` の展開を 3/3 で確認)、本 issue
+  表題の「args を受け取らず」は字義としては誤り。空振りの実体は「展開値が実行すべき
+  task として認識されない」ことで、修正前構造は 9/9 空振り・実行 task block を持つ
+  構造は 8/9 実行。dfee3eb で後者の構造に統一済み。ただし成功率は確率的なので、
+  その残余は `2026-07-31-fork-input-contract-compliance-is-probabilistic` へ分離した
 
 ## TODO
 
