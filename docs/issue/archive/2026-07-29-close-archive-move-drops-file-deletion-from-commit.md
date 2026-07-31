@@ -1,6 +1,6 @@
 ---
 title: close 実行時に元ファイルの削除が commit から漏れることがある (残留 diff を stale/無関係と誤判定する報告も)
-status: wip
+status: resolved
 category: bug
 created: 2026-07-29T00:08:07+09:00
 last_read:
@@ -9,10 +9,10 @@ wip_entered: 2026-07-31T23:12:45+09:00
 blocked_entered:
 pending_entered:
 discarded_entered:
-resolved_entered:
+resolved_entered: 2026-08-01T08:38:20+09:00
 discard_reason:
 pending_reason:
-close_reason:
+close_reason: ["implemented"]
 blocked_by:
 origin: 依頼元プロジェクト (claude-rules-personal 統括セッション)
 ---
@@ -57,9 +57,9 @@ commit のパス指定に元パスが含まれるか否かが実行毎に揺れ�
 commit に旧パス (削除) を含めるか、mv で rename を 1 操作にすれば安定するのでは。
 ただし skill 実行 agent の裁量 (手順の揺れ) 由来の可能性もあり断定はしない。
 
-## 現状 (2026-07-31)
+## 現状 (2026-08-01)
 
-修正は完了しているが、配布後の実 command 検証が残っているため close せず wip とする。
+修正完了。v0.2.11 配布後の実機検証で 12/12 成功を確認した。
 
 ### 修正内容
 
@@ -97,21 +97,75 @@ commit に旧パス (削除) を含めるか、mv で rename を 1 操作にす�
 成功することはあり、失敗は確率的に起きていたことの裏付けになる。新版指示の効果は
 この 3 件では測れていない。
 
+### v0.2.11 配布後の実機検証 (2026-08-01、12/12 成功)
+
+`/private/tmp` の使い捨て fixture repo で、新版 `commands/update.md` による close を
+12 回実行した。本リポの `docs/issue/` は検証に一切使っていない。
+
+検証手順: fixture repo (active issue 3 件 + INDEX.md + `archive/`) を毎回作り直し、
+別プロセスの `claude -p '/local-issue:update <slug> --status <s> --reason "..."'` を
+実行。各 fork の transcript に埋め込まれた plugin root を grep して
+`local-issue/local-issue/0.2.11` であることを 12 回とも確認済み (= 旧 0.2.10 cache
+での実行ではない)。
+
+| # | VCS | status | 対象 slug | commit | name-status |
+|---|---|---|---|---|---|
+| 1 | git | resolved | alpha-parser-bug | 5109495 | `M INDEX.md` + `R086` |
+| 2 | git | discarded | gamma-cli-help | e2e138d | `M INDEX.md` + `R082` |
+| 3 | jj | resolved | alpha-parser-bug | fbc9094e92a1 | `M INDEX.md` + `R docs/issue/{ => archive}/…` |
+| 4 | jj | discarded | gamma-cli-help | e63c330c0b56 | `M INDEX.md` + `R docs/issue/{ => archive}/…` |
+| 5 | git | resolved | beta-cache-miss | 296804c | `M INDEX.md` + `R086` |
+| 6 | git | discarded | alpha-parser-bug | 8251344 | `M INDEX.md` + `R079` |
+| 7 | jj | resolved | beta-cache-miss | 4cc6a32edfa4 | `M INDEX.md` + `R docs/issue/{ => archive}/…` |
+| 8 | jj | discarded | alpha-parser-bug | 1b3e44ea19f0 | `M INDEX.md` + `R docs/issue/{ => archive}/…` |
+| 9 | git | resolved | gamma-cli-help | bd6b114 | `M INDEX.md` + `R083` |
+| 10 | git | discarded | beta-cache-miss | 5d0ad98 | `M INDEX.md` + `R082` |
+| 11 | jj | resolved | gamma-cli-help | 327098f406e6 | `M INDEX.md` + `R docs/issue/{ => archive}/…` |
+| 12 | jj | discarded | beta-cache-miss | d6b037f21a78 | `M INDEX.md` + `R docs/issue/{ => archive}/…` |
+
+全 12 回で共通に成立した事実:
+
+- commit は 3 path 指定 (旧 path / archive path / INDEX.md) の 1 本のみ。旧 path を
+  省いた実行はゼロ
+- `--allow-nonexistent-path` の使用はゼロ (全 transcript を grep して 0 件)
+- 旧 path の削除は git / jj とも rename (`R`) に畳まれて commit に含まれた。
+  残留 `D` はゼロ
+- close 後に `bump-semver vcs is clean` が実行され、12 回とも exit 0
+- 事後に検証者側で `git status --porcelain` / `jj status` / `bump-semver vcs is clean`
+  を再確認しても残留差分ゼロ
+- archive 済みファイルの frontmatter (`resolved_entered` / `discarded_entered` /
+  `close_reason` / `discard_reason`) と INDEX の canonical 順序も正しく更新されていた
+
+成功率 **12/12 = 100%**。旧版では確率的に失敗していた挙動が、少なくとも本条件下では
+再現しなくなった。
+
+検証の限界 (= この検証が主張しないこと):
+
+- `claude -p` の非対話モードでは command frontmatter の `allowed-tools` による Bash
+  制限が実効せず、fork は `git status` 等も実行できた (probe で確認)。つまり本番の
+  対話セッションより検証手段が広い環境での測定である。ただし新版が必須化した
+  `bump-semver vcs is clean` は本番の allowed-tools にも含まれ、12 回とも実際に
+  実行されているので、必須経路自体は検証できている
+- 12/12 は「失敗率 50% 程度なら 12 連続成功の確率は 0.02% 未満」という意味での
+  否定的証拠であって、失敗率ゼロの証明ではない
+
 ## 受け入れ条件
 
-- [ ] update (close) の実装で、archive 移動と commit のパス指定を突き合わせ、
+- [x] update (close) の実装で、archive 移動と commit のパス指定を突き合わせ、
       元パス削除が commit 対象に含まれない条件を特定する
-- [ ] 特定した条件を修正するか、close 完了直後に自己検証 (working copy clean
-      チェック) を入れて再発を防ぐ
-- [ ] 「残留 diff を stale/無関係と誤判定して報告する」自己検証側の問題も
-      合わせて確認 (= 誤判定を招く報告テンプレ・チェック漏れがないか)
+      (= commit 後検証の 3 経路が全て塞がっていたこと、および
+      `--allow-nonexistent-path` ヒントに従うと削除が黙って捨てられること)
+- [x] 特定した条件を修正するか、close 完了直後に自己検証 (working copy clean
+      チェック) を入れて再発を防ぐ (= `bump-semver vcs is clean` を必須化)
+- [x] 「残留 diff を stale/無関係と誤判定して報告する」自己検証側の問題も
+      合わせて確認 (= dirty 時は成功を報告せず停止する手順に変更)
 
-## TODO
+## 本 issue のスコープ外に残る項目
 
-<!-- wip 時のみ -->
+close 判断には影響しないが、失わないよう記録しておく。
 
-- [ ] v0.2.11 を push して plugin cache を更新した後、新版 commands/update.md
-      で実際に close を複数回実行し、3 path commit と `vcs is clean` 検証が
-      指示どおり行われることを確認する
-- [ ] bump-semver 側の有害なエラーヒント (`--allow-nonexistent-path` の案内)
-      について、上流リポへ部外者 issue を起票するかを判断する (まだ未起票)
+- bump-semver の `--allow-nonexistent-path` エラーヒントは、削除済み path を
+  渡す正当なケース (= 本 issue の close commit) で「そのフラグを付けろ」と
+  誘導してしまう。上流 (kawaz/bump-semver) へ部外者 issue を起票するかは未判断。
+  本リポ側の修正 (フラグを使わない invariant の明記) は完了済みなので、
+  claude-local-issue の受け入れ条件としては充足している。
