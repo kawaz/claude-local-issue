@@ -81,10 +81,8 @@ allowed-tools: Read, Write, Edit, Bash(bump-semver vcs:*), Bash(git log:*), Bash
 
 走査後の active issue 全件から `<root>/docs/issue/INDEX.md` を **再生成**:
 
-- 雛形は `${CLAUDE_PLUGIN_ROOT}/templates/index.md` (= 列構成 / ソート規約の正本)
-- 既存 INDEX.md があれば内容を破棄、雛形ベースで新規作成
-- 列: `| date | category | status | slug | 概要 |` (= local-issue 標準)
-- ソート: status (idea→open→wip→blocked→pending-sublimation) 優先、同 status 内は date 降順
+- 雛形は `${CLAUDE_PLUGIN_ROOT}/templates/index.md` (= 列構成 / canonical 順序 / 行形式の唯一の正本)
+- 既存 INDEX.md があれば内容を破棄、雛形の規約に従って新規作成
 
 ### 5. bulk commit (`--dry-run` 時はスキップ)
 

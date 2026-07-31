@@ -40,7 +40,7 @@ status は `idea` / `open` / `wip` / `blocked` / `pending-sublimation` / `discar
 2. **遷移 TS を記録**: 新しい status に対応する `<新status>-entered:` に今(`date -Iseconds`、full ISO8601 + TZ)を入れる(例: wip にするなら `wip_entered`)。同じ状態に再度入る往復は上書き(現状の割り切り。全履歴が要るようになったら JSON/SQLite へ移行し transitions 配列化する)
 3. **reason が要る遷移**: `discarded` なら `discard_reason:`、`pending-sublimation` なら `pending_reason:` を必須記入。`blocked` なら `blocked_by:` を記入
 4. category が本文変更で変わるなら再判定して `category:` も更新
-5. INDEX.md の該当 1 行のみ更新(status と、必要なら category)
+5. INDEX.md の列構成・canonical 順序・行形式は `${CLAUDE_PLUGIN_ROOT}/templates/index.md` を正本とする。status / category / date / 概要の変更を反映する時は、対象行だけを除去して更新後の canonical 位置へ再挿入する。**既存の他の行の順序・内容は変えない**
 6. `bump-semver vcs commit -m "issue(<slug>): status <old> -> <new>" docs/issue/<file> docs/issue/INDEX.md`
 
 **mtime には一切依存しない。時刻は全て frontmatter に明示記録する**(vcs 操作で mtime はあてにならないため)。
@@ -51,7 +51,7 @@ status は `idea` / `open` / `wip` / `blocked` / `pending-sublimation` / `discar
 2. **Edit を優先、Write 全文再書き込みは回避** (= DR-0005 Q2): 全置換は `Edit` の `replace_all: true` を優先。Write での全文再書き込みは大ファイルでコスト増 + 転記ミスリスクがあるため避ける。複数箇所の独立した変更も Edit を複数回呼ぶ
 3. 該当 issue を Edit
 4. 本文が実質変わり category が変わるなら `category:` 再判定
-5. INDEX.md の概要 1 行が古ければ更新
+5. INDEX.md の category / date / 概要が変わるなら、対象行だけを除去して `${CLAUDE_PLUGIN_ROOT}/templates/index.md` の canonical 位置へ再挿入する。既存の他の行の順序・内容は変えない
 6. commit(パス限定)
 
 ## close (status=resolved / discarded) フロー
@@ -102,7 +102,7 @@ close_reason を走査し、**`dr/*` 要素があり、かつ `implemented` が�
 - `resolved_entered` / `discarded_entered` に今(`date -Iseconds`)を記録、close_reason を frontmatter に書く
 - **移動は `mv`** で行う:
   1. `mv <root>/docs/issue/<file> <root>/docs/issue/archive/<file>`
-- INDEX.md から該当行を除去(active な index には載せない)
+- INDEX.md は対象行の除去だけを行う(active な index には載せない)。既存の他の行の順序・内容は変えない
   - 直読みは hook でガードされ、list はデフォルト archive を見ないので、メインコンテキストからは「見えなくなる」=従来の削除と同じ効果。経緯(全 TS・reason)は DB として残る
 
 ### 6. commit / 報告

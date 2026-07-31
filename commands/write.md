@@ -51,9 +51,10 @@ allowed-tools: Read, Write, Edit, Bash(bump-semver vcs:*), Bash(date:*), Bash(ls
    - テンプレは `${CLAUDE_PLUGIN_ROOT}/templates/issue.md` を読んで使う(本文に埋まったこの絶対パスは command 起動時に展開済みで fork 先 subagent にも渡るため、`context: fork` 下でも Read できる)。**全 TS フィールドは full ISO8601、未到達の状態の `*-entered` は空**
 
 4. **issue index にこの 1 件のみ反映**
-   - `<root>/docs/issue/INDEX.md` があれば、この 1 件のエントリ行を追加(既存 slug なら該当行のみ更新)。**他の行は読み取り以外で触らない**
-   - INDEX.md が無ければ docs-structure 規約に従い新規作成し、この 1 件だけを載せる
-   - エントリ形式: `| <date> | <category> | <status> | [<slug>](./<file>) | <概要 1 行> |`
+   - 列構成・canonical 順序・行形式は `${CLAUDE_PLUGIN_ROOT}/templates/index.md` を正本とする
+   - `<root>/docs/issue/INDEX.md` があれば、この 1 件のエントリ行だけを canonical 位置へ挿入する。**既存の他の行の順序・内容は変えない**
+   - 同じ slug の行が既にあれば、その行だけを除去して更新後の canonical 位置へ再挿入する。他の行は読み取り以外で触らない
+   - INDEX.md が無ければテンプレートから新規作成し、この 1 件だけを載せる
 
 5. **ローカル commit (push しない)**
    - `cd <root> && bump-semver vcs commit -m "issue(<category>): <slug>" docs/issue/<file> docs/issue/INDEX.md`

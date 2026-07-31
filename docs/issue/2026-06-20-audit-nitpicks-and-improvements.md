@@ -54,7 +54,7 @@ origin: ペルソナ監査 3 名 (TechWriter/Security/QA) からの軽微改善�
 
 - I1: templates/issue.md の `## 解決時の記録先` 削除 (= v0.2.4 で対応済、本 issue では扱わない)
 - I4: list の `--stale-days` と `--unread-only` の AND/OR 曖昧
-- I5: write skill に「INDEX.md は Edit append」明示 (= DR-0005 Q2 と整合)
+- I5: write skill に「対象行だけを canonical 位置へ挿入し、既存の他行は変更しない」ことを明示 (= 1 issue スコープと INDEX 順序を両立)
 - I7: lint-skills が「先頭 ---」だけ check (= YAML 完全 parse へ)
 - I8: hook 内コメント「TaskCreate 等」→ 「Agent / Glob / AskUserQuestion 等」更新
 - I9: migrate の `git log --diff-filter=A` が jj 環境で動くか empirical-verification
