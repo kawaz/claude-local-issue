@@ -1,5 +1,5 @@
 ---
-title: worktree 越境利用時に対象リポを誤認する (セッション cwd 優先の解決が原因か)
+title: --repo のリポ名指定では main 固定となり worktree / workspace を選べない
 status: open
 category: bug
 created: 2026-07-10T12:22:19+09:00
@@ -17,46 +17,138 @@ blocked_by:
 origin: LaserGuideV3 (クロスプロジェクト起票、部外者フラグ)
 ---
 
-# worktree 越境利用時に対象リポを誤認する (セッション cwd 優先の解決が原因か)
+# --repo のリポ名指定では main 固定となり worktree / workspace を選べない
 
-## 概要
+## 判明した事実
 
-別リポ (LaserGuideV3) を cwd とするセッションから、git worktree
-(`/Users/kawaz/.local/share/repos/github.com/kawaz/LaserGuide/wip-v3`) の
-`docs/issue/` を read/update しようとしたところ、skill がセッション cwd 側の
-リポを見に行き、worktree 側の issue を認識できなかった、というサブエージェント
-の報告があった (2026-07-10、LaserGuide v3 立ち上げセッション)。当該サブエージェント
-は frontmatter を手動編集する形で回避した。
+- `list` / `migrate` / `read` / `write` の root 解決は、`--repo <name>` を
+  `$HOME/.local/share/repos/github.com/kawaz/<name>/main` に変換してから
+  `bump-semver vcs get root` で正規化する。リポ名だけでは同じリポの別
+  worktree / workspace を指定できない。
+- `--repo <absolute-path>` は指定先を候補 root にするため、git worktree と
+  jj workspace のどちらも正しい workspace root を得られる。
+- `--repo` 省略時は `$CLAUDE_PROJECT_DIR`、未設定なら cwd を候補 root にする。
+  候補が worktree / workspace 内なら正しく解決し、別リポを指していればその
+  別リポを解決する。この調査 worker の実行環境では `CLAUDE_PROJECT_DIR` は
+  未設定だった。
+- `bump-semver vcs get root` は git linked worktree と jj workspace を識別する。
+  subdirectory から実行しても、それぞれ現在の workspace root を返した。
+  main / common repository へ誤って寄せる挙動は再現しなかった。
+- `update.md` は `--repo` 省略時を「カレントプロジェクト」、絶対パスを
+  `realpath` と規定する一方、リポ名の変換と `bump-semver` 正規化を固定フローに
+  明記していない。plugin 全体の path 規約は `SKILL.md` にあるが、command 単体の
+  root 解決仕様は他の 4 command より不足している。
 
-一方、同セッションで親側から args に絶対パスを明示した write/update は成功
-している (成功例: LaserGuide/wip-v3 への 2 件起票と 1 件 update)。このため、
-「args でのパス明示があれば動くが、明示の仕方や呼び出し文脈 (fork 経由の
-サブエージェント起動等) によっては cwd 解決に落ちる」可能性がある。
+したがって再現する誤認条件は、対象が別 worktree / workspace なのに
+`--repo <name>` を使う場合、または `--repo` を省略して
+`$CLAUDE_PROJECT_DIR` / cwd が別リポを指す場合である。有効な絶対パスが候補 root
+として採用された後に cwd が優先される現象は再現しなかった。
 
-## 背景
+## command ごとの root 解決経路
 
-これは部外者 (LaserGuideV3 側の作業セッション) からのフラグであり、一次情報は
-LaserGuide v3 セッションの focus-flash worker 最終報告 (2026-07-10) のみ。
-観測は伝聞混じり (= 部外者セッションが直接 local-issue plugin の内部実装を
-確認したわけではない) なので、事実として断定はできない。再現確認してから
-採否を判断してほしい。
+| command | `--repo <name>` | `--repo <absolute-path>` | 省略時 | VCS root 正規化 |
+|---|---|---|---|---|
+| `list` | `<repo-store>/<name>/main` | そのまま | `$CLAUDE_PROJECT_DIR`、未設定なら cwd | 明記あり |
+| `migrate` | `<repo-store>/<name>/main` | そのまま | `$CLAUDE_PROJECT_DIR`、未設定なら cwd | 明記あり |
+| `read` | `<repo-store>/<name>/main` | そのまま | `$CLAUDE_PROJECT_DIR`、未設定なら cwd | 明記あり |
+| `write` | `<repo-store>/<name>/main` | `realpath` | `$CLAUDE_PROJECT_DIR`、未設定なら cwd | 明記あり |
+| `update` | command 固定フローには変換規則なし | `realpath` | カレントプロジェクト | command 固定フローには明記なし |
 
-再現確認の候補:
-- worktree ディレクトリ (bare + 複数 worktree 構成) + 別 cwd のセッションで
-  read/update/write を試す組合せ
-- args のパス明示のしかた (相対パス / 絶対パス / repo 名指定) ごとの解決結果差
-- fork 経由のサブエージェント起動時に args がどう伝播するか (2026-07-03 起票済み
-  の `skill-tool-fork-invocation-drops-arguments` issue と関連する可能性もあるため
-  合わせて確認)
+`SKILL.md` の plugin 全体規約は、リポ名を `<repo-store>/<name>/main`、絶対パスを
+無条件採用、省略時を `$CLAUDE_PROJECT_DIR` とし、最後に
+`cd <root> && bump-semver vcs get root` で正規化すると定めている。
+
+## 実測マトリクス
+
+検証時の fixture root は `<tmp>` と省略する。使用したバージョンは
+`bump-semver v0.48.1`、`jj 0.43.0`。
+
+### VCS root の正規化
+
+実行形:
+
+```sh
+cd <candidate-or-subdirectory>
+bump-semver vcs get root
+```
+
+| VCS / cwd | 実出力 | 判定 |
+|---|---|---|
+| git main `<tmp>/git-repo/main` | `<tmp>/git-repo/main` | main root |
+| git linked worktree `<tmp>/git-repo/topic-worktree` | `<tmp>/git-repo/topic-worktree` | worktree root |
+| git linked worktree の `subdir` | `<tmp>/git-repo/topic-worktree` | worktree root |
+| jj main workspace `<tmp>/jj-repo/main` | `<tmp>/jj-repo/main` | main workspace root |
+| jj workspace `<tmp>/jj-repo/topic-workspace` | `<tmp>/jj-repo/topic-workspace` | workspace root |
+| jj workspace の `subdir` | `<tmp>/jj-repo/topic-workspace` | workspace root |
+
+`git rev-parse --show-toplevel` と `jj root` も同じ値を返した。
+
+### 初期候補 root と正規化結果
+
+実行形:
+
+```sh
+root=<command の規則で選んだ候補>
+cd "$root"
+bump-semver vcs get root
+```
+
+| 意図する対象 | 指定条件 | 候補 root | 実出力 | 結果 |
+|---|---|---|---|---|
+| git linked worktree | `--repo claude-local-issue` | `<repo-store>/claude-local-issue/main` | `<repo-store>/claude-local-issue/main` | main を選び、意図した worktree へ到達しない |
+| git linked worktree | `--repo <absolute-worktree-path>` | `<tmp>/topic-worktree` | `<tmp>/topic-worktree` | 正しい |
+| git linked worktree | 省略、`CLAUDE_PROJECT_DIR=<tmp>/topic-worktree` | `<tmp>/topic-worktree` | `<tmp>/topic-worktree` | 正しい |
+| git linked worktree | 省略、`CLAUDE_PROJECT_DIR=<repo-store>/claude-local-issue/main` | `<repo-store>/claude-local-issue/main` | `<repo-store>/claude-local-issue/main` | main を選ぶ |
+| jj workspace | 省略、`CLAUDE_PROJECT_DIR=<tmp>/jj-repo/topic-workspace` | `<tmp>/jj-repo/topic-workspace` | `<tmp>/jj-repo/topic-workspace` | 正しい |
+| VCS 外の cwd | 省略、`CLAUDE_PROJECT_DIR` 未設定 | VCS 外の cwd | `bump-semver: not a git or jj repository (...)` | 誤った VCS root へ黙って寄せず失敗 |
+
+fixture は検証後に削除し、実リポに一時追加した detached worktree も
+`git worktree remove --force` 後に `git worktree list` から消えたことを確認した。
+
+## 最小再現
+
+`<name>` の canonical main と別 worktree が存在する状態で、command の規則を
+そのまま適用する。
+
+```sh
+intended=/private/tmp/topic-worktree
+root="$HOME/.local/share/repos/github.com/kawaz/<name>/main" # --repo <name>
+cd "$root"
+bump-semver vcs get root
+```
+
+実出力は `<repo-store>/<name>/main` であり、`$intended` にはならない。
+`root=$intended` とする絶対パス指定では実出力も `$intended` になる。
+
+## 原因
+
+原因は `bump-semver` の worktree / workspace 判定ではなく、その前段の候補 root
+選択にある。`--repo <name>` は workspace 識別子を持たず canonical `main` へ
+一意変換されるため、後段の `bump-semver` は main 内で実行され、正しく main root
+を返す。`bump-semver` には呼び出し側が意図した別 workspace を復元する情報がない。
+
+別 cwd からの利用で worktree を対象にするには、絶対パスが command の入力として
+保持される必要がある。絶対パスが失われた場合の fallback は
+`$CLAUDE_PROJECT_DIR` / cwd なので、呼び出し元リポを対象にする。元報告の正確な
+引数列は一次記録がなく、旧 plugin cache の command invoke も今回禁止されているため、
+元報告で絶対パスが失われた箇所までは確定していない。
+
+## 対応範囲
+
+この issue は再現と原因特定まで完了した。修正では、少なくとも次を満たす必要がある。
+
+- worktree / workspace を対象にする場合、絶対パスを root 選択まで保持する。
+- リポ名指定を canonical `main` 専用として維持するなら、その制約を interface 上で
+  明確にする。別 workspace も名前で選べる仕様にするなら、workspace を識別できる
+  入力形式を別途設計する。
+- `update.md` の root 解決を他 command と同じ粒度で明記し、command 単体でも
+  fallback を推測させない。
 
 ## 受け入れ条件
 
-- [ ] worktree + 別 cwd の組合せで実際に誤認が再現するか確認した
-- [ ] 再現する場合、原因 (cwd 優先の解決ロジックか、他の要因か) を特定した
-- [ ] 再現しない場合、または該当なしと判断した場合はその根拠を記録した
-- [ ] 対応が必要と判断した場合、repo/cwd 明示指定オプションの追加 or ドキュメント
-      明記などの対応案を決定した
-
-## TODO
-
-<!-- wip 時のみ -->
+- [x] git linked worktree + 別 cwd の組合せで誤認条件を確認した
+- [x] jj workspace + 別 cwd の組合せで root 解決を確認した
+- [x] `--repo` のリポ名 / 絶対パス / 省略を比較した
+- [x] 原因が候補 root 選択であり、`bump-semver` 正規化ではないことを確認した
+- [x] 再現しない条件と検証範囲を記録した
+- [x] 対応に必要な仕様判断を記録した
