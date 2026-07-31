@@ -1,18 +1,18 @@
 ---
 title: read と list の forked 実行が args を受け取らず即終了する (update/write は正常)
-status: open
+status: discarded
 category: bug
 created: 2026-07-28T23:07:26+09:00
-last_read:
+last_read: 2026-07-31T13:34:00+09:00
 open_entered: 2026-07-28T23:07:26+09:00
 wip_entered:
 blocked_entered:
 pending_entered:
-discarded_entered:
+discarded_entered: 2026-07-31T13:42:00+09:00
 resolved_entered:
-discard_reason:
+discard_reason: ["discarded","2026-07-03-skill-tool-fork-invocation-drops-arguments の重複 (同一の fork 引数伝搬事象を read/list 側から観測したもの)。両者の受け入れ条件は統合先の本文に反映済みで、統合先は 2026-07-31 に resolved で close"]
 pending_reason:
-close_reason:
+close_reason: ["discarded","duplicate of 2026-07-03-skill-tool-fork-invocation-drops-arguments"]
 blocked_by:
 origin: rules-personal (依頼元プロジェクト)
 ---
@@ -56,7 +56,26 @@ frontmatter を読む。この場合 last_read の記録はできない。
 
 - [ ] read/list の forked 実行時に args (省略時含む) が正しく task として
       渡ることを確認 (再現環境で tool_uses > 0 になる)
-- [ ] update/write との command 定義差分を特定し、原因を記録
+- [x] update/write との command 定義差分を特定し、原因を記録
+
+## 重複判定 (2026-07-31)
+
+`2026-07-03-skill-tool-fork-invocation-drops-arguments` と同一事象の別観測のため
+**duplicate として discarded**。以降の記録は統合先 (archive) を参照。
+
+両受け入れ条件の扱い:
+
+- **command 定義差分の特定**: 統合先で結論を記録した。当時の 5 command は
+  `## 入力 ($ARGUMENTS)` の同一構成で、read/list だけが不利になる定義差分は
+  **無かった** (差分は `model` / `effort` / `allowed-tools` のみ)。本 issue の
+  「read/list 固有」という見立ては、症状の見え方が model tier で分岐すること
+  (低 tier fork は no-op で目立ち、高 tier fork は文脈から任務を創作して完走して
+  しまうため一見正常に見える) による観測バイアスだった。2026-07-04 には update でも
+  同型の伝搬失敗が観測されている
+- **args が task として渡ることの確認**: 未達のまま。plugin 定義を変えずに成否が
+  変動し同一入力で再現しないため harness 側の事象と判断し、統合先の「残余」節に
+  記録した。plugin 側は入力契約 (= 全 5 command の「実行 task」block) で、args が
+  届かない場合に文脈補完せず明示 reject するところまでを担保している
 
 ## TODO
 
