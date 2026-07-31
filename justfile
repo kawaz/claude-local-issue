@@ -56,10 +56,13 @@ check-outdated-translations:
       bump-semver vcs outdated 'glob:**/*-ja.md' '$1/$2.md'; \
     else echo "(skip: bump-semver not found)"; fi
 
-# bump VERSION + release commit (VERSION ファイルを持つ場合)
+# bump plugin version + release commit
+# 版の正本は plugin manifest 2 つ (VERSION ファイルは持たない)。
+# 2 file を同時に渡すことで、bump も get も両者の一致を検査する
+# (食い違えば "version mismatch" で exit 1 = 片方だけ古い状態を commit できない)。
 bump-version level="patch":
-    bump-semver "$1" VERSION --write --quiet
-    bump-semver vcs commit -m "Release v$(bump-semver get VERSION)" VERSION
+    bump-semver "$1" .claude-plugin/plugin.json .claude-plugin/marketplace.json --write --quiet
+    bump-semver vcs commit -m "Release v$(bump-semver get .claude-plugin/plugin.json .claude-plugin/marketplace.json)" .claude-plugin/plugin.json .claude-plugin/marketplace.json
 
 # fail with a sync→promote→push hint when the current bookmark / branch
 # is not the default (DR-0038 adoption pattern, see bump-semver docs/decisions/DR-0038).
