@@ -35,8 +35,16 @@ lint-skills:
 lint: lint-json lint-sh lint-skills
 
 # hook の実機スモークテスト (= jq ベース hook の正値 + 負値 + bypass マトリクス、9+ ケース)
+# + sub-command の契約テスト (= close の VCS fixture + 指示書の静的 invariant)
 test: lint
     @bash hooks/test/run-matrix.sh
+    @bash commands/test/run-contracts.sh
+
+# docs/issue/INDEX.md が canonical 順序かを検査 (正本: templates/index.md)。
+# write / update の順序遵守が直るまで失敗するため `just test` には入れていない
+# (受け入れテスト: docs/issue/2026-07-06-index-sort-not-enforced-on-write-update.md)
+check-index-order:
+    @bash commands/test/check-index-order.sh
 
 # CI entry (= 翻訳ペア freshness も含む)
 ci: lint test check-outdated-translations
