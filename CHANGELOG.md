@@ -2,6 +2,22 @@
 
 All notable changes per release. Follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) conventions.
 
+## [0.2.11] - 2026-07-31
+
+### Fixed
+- **close (archive 移動) で mv 元の削除が commit から漏れる bug** (= 利用側 2 リポで再現、原因は commit の path 列挙から旧 path が落ちる指示逸脱): `commands/update.md` の close commit に「旧 path を含む 3 path 必須」「`--allow-nonexistent-path` を指定しない」「commit 後に `bump-semver vcs is clean` で検証」を明文化。dirty なら成功を報告せず停止し、旧 path だけの追補 commit を打たない
+- **`write` / `update` が `INDEX.md` の順序規約を守らない bug** (= ソート規約が `templates/index.md` の「migrate 用メモ」に閉じており差分更新経路に効いていなかった): `templates/index.md` を列構成・canonical 順序・行形式の唯一の正本に格上げし、`write` / `update` / `migrate` の INDEX 反映を「対象行だけを除去して canonical 位置へ再挿入、既存の他の行の順序・内容は変えない」に統一
+- **forked sub-command が ambient な session context から任務を創作する bug** (= `update` が単一 issue スコープを離れて 13 issue を一括処理した観測): 全 5 command の frontmatter 直後に「実行 task (これが唯一の入力)」block を置き、`$ARGUMENTS` の substitution 箇所を 1 つに固定。command 名 / ファイル名 / session context / TODO list / 直前の会話からの入力補完を禁止し、空引数は「引数なしという文字列としての事実」として扱う (`read` / `write` / `update` は reject、`list` / `migrate` は既定操作を実行)。位置引数の文法と未知 flag の reject も明記。これにより、args が fork 先に届かなかった場合の挙動が「文脈からの創作」から「明示的な reject」に変わる (= 引数非伝搬そのものは harness 側の事象で、本 plugin では被害の封じ込めまで)
+- `justfile` の `bump-version` が存在しない `VERSION` ファイルを参照していたのを、plugin manifest 2 つ (`plugin.json` / `marketplace.json`) の同時 bump に修正 (= 2 file を同時に渡すことで版の食い違いを検査)
+
+### Added
+- `commands/test/run-contracts.sh` (= sub-command 契約テスト。close の 3 path commit と旧 path 省略の検出を temp git repo で実機確認する VCS fixture + 指示書の静的 invariant) を `just test` に追加
+- `commands/test/check-index-order.sh` + `just check-index-order` (= INDEX の canonical 順序チェッカ。良/悪 fixture で checker 自身も回帰テスト)
+- `--repo` 省略時の root 解決に cwd fallback を明記 (`$CLAUDE_PROJECT_DIR` 未設定時)
+
+### Changed
+- `commands/read.md` の `model` を haiku から sonnet に変更、`read` / `write` / `update` / `migrate` に `effort` を明示
+
 ## [0.2.10] - 2026-06-23
 
 ### Fixed
