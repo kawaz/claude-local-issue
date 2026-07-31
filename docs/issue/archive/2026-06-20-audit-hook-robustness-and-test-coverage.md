@@ -1,6 +1,6 @@
 ---
 title: hook の堅牢化 + test カバレッジ拡張
-status: wip
+status: resolved
 category: task
 created: 2026-06-20T00:31:38+09:00
 last_read:
@@ -9,10 +9,10 @@ wip_entered: 2026-06-22T19:25:00+09:00
 blocked_entered:
 pending_entered:
 discarded_entered:
-resolved_entered:
+resolved_entered: 2026-07-31T23:16:39+09:00
 discard_reason:
 pending_reason:
-close_reason:
+close_reason: ["implemented:Phase1-hook の JSON parse を jq に統一 (v0.2.5)", "implemented:Phase2-slug `^[a-z0-9][a-z0-9-]{0,80}$` / repo `^[a-z0-9_-]+$` の strict validation を全 5 commands に (v0.2.7)", "implemented:Phase3-archive 配下を nudge 除外 (hooks/issue-access-guard.sh, v0.2.7)", "implemented:Phase4-allowed-tools を `Bash(bump-semver vcs:*)` / `Bash(mv:*)` へ粒度絞り (v0.2.7)", "implemented:Phase5-SessionStart hook の find に symlink 除外 `! -lname '*'` (v0.2.7)", "implemented:test マトリクス拡張 (justfile test 46 pass)", "split:audit-nitpicks-and-improvements(残課題 W4/W7/W13/W14 を転記済 commit f8c4425)"]
 blocked_by:
 origin: ペルソナ監査 (Security/QA) からの集約 issue
 ---
