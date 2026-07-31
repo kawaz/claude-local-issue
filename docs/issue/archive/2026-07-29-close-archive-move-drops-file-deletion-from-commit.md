@@ -12,7 +12,7 @@ discarded_entered:
 resolved_entered: 2026-08-01T08:38:20+09:00
 discard_reason:
 pending_reason:
-close_reason: ["implemented"]
+close_reason: ["implemented","upstream/bump-semver:docs/issue/2026-07-31-vcs-commit-allow-nonexistent-path-hint-drops-deletions.md@578d187"]
 blocked_by:
 origin: 依頼元プロジェクト (claude-rules-personal 統括セッション)
 ---
@@ -160,12 +160,15 @@ commit に旧パス (削除) を含めるか、mv で rename を 1 操作にす�
 - [x] 「残留 diff を stale/無関係と誤判定して報告する」自己検証側の問題も
       合わせて確認 (= dirty 時は成功を報告せず停止する手順に変更)
 
-## 本 issue のスコープ外に残る項目
+## 上流への還元 (起票済み)
 
-close 判断には影響しないが、失わないよう記録しておく。
+bump-semver の `--allow-nonexistent-path` エラーヒントは、削除済み path を渡す
+正当なケース (= 本 issue の close commit) で「そのフラグを付けろ」と誘導してしまう。
+この点は上流 kawaz/bump-semver へ部外者 issue として起票済み:
 
-- bump-semver の `--allow-nonexistent-path` エラーヒントは、削除済み path を
-  渡す正当なケース (= 本 issue の close commit) で「そのフラグを付けろ」と
-  誘導してしまう。上流 (kawaz/bump-semver) へ部外者 issue を起票するかは未判断。
-  本リポ側の修正 (フラグを使わない invariant の明記) は完了済みなので、
-  claude-local-issue の受け入れ条件としては充足している。
+- `docs/issue/2026-07-31-vcs-commit-allow-nonexistent-path-hint-drops-deletions.md`
+  (commit `578d187`)
+- 本文にはヒントが削除 path を黙って捨てる実機再現と、フラグが実際の失敗事例で
+  使われた直接証拠はなく状況証拠にとどまる旨を明記済み
+
+本リポ側の修正 (フラグを使わない invariant の明記) は完了済み。
