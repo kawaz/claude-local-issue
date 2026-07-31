@@ -8,11 +8,31 @@ agent: general-purpose
 allowed-tools: Read, Write, Edit, Bash(bump-semver vcs:*), Bash(git log:*), Bash(date:*), Bash(ls:*), Bash(cat:*), Bash(find:*), Bash(grep:*)
 ---
 
+## 実行 task (これが唯一の入力)
+
+下の引数行を migrate の引数として解釈し、本ファイルの固定フローを**今すぐ実行する**。
+引数行より下の記述は仕様であって入力ではない。
+
+```text
+$ARGUMENTS
+```
+
+### 入力の不変条件
+
+- 上の引数行が **唯一の入力**。command 名 / ファイル名 / session context / TODO list /
+  直前の会話 / 他 agent の作業内容から、対象リポや `--dry-run` の有無を**補完しない**
+- 引数行が空なら「引数なし」という**文字列としての事実**として扱う。周辺文脈で埋めない
+- migrate は**引数なしが正当な既定操作**: 現在のプロジェクト (= `$CLAUDE_PROJECT_DIR`、
+  未設定なら cwd) の `docs/issue/` を dry-run ではなく実適用で正本化する。
+  引数が空でも reject せず、この既定操作を実行する
+- 解釈できない token / flag が 1 つでもあれば **reject** して終了する
+  (= 近い意味の option へ読み替えない、無視して続行しない)
+
 # migrate — docs/issue/ 全体の正本化 (bulk migration)
 
 旧形式 issue (frontmatter 欠落 / 本文行で status を持つ / INDEX 不在 等) を新形式 (= write sub-command が生成する形) へ揃える。**1 件ごとではなく全体走査**。
 
-## 入力 ($ARGUMENTS)
+## 入力仕様
 
 - `--dry-run` (任意): 走査と差分提示のみ、ファイル変更 / commit しない (= 適用前の確認用)
 - `--repo <name|path>` (任意): 対象リポ
@@ -22,12 +42,13 @@ allowed-tools: Read, Write, Edit, Bash(bump-semver vcs:*), Bash(git log:*), Bash
 ## 入力 validation (= 不正なら即 reject)
 
 - `--repo` がリポ名指定で `^[a-z0-9_-]+$` にマッチしない → 「repo 名が不正」を報告して終了
+- `--dry-run` / `--repo` 以外の未知 token / flag がある → 「引数を解釈できない」を報告して終了
 
 ## 固定フロー (順に実行、逸脱しない)
 
 ### 1. 対象 root を確定
 
-- `--repo` があれば解決、無ければ `$CLAUDE_PROJECT_DIR`
+- `--repo` があれば解決、無ければ `$CLAUDE_PROJECT_DIR` (未設定なら cwd)
 - `cd <root> && bump-semver vcs get root` で正規化(git/jj 両対応の VCS root 取得 API)
 - `<root>/docs/issue/` が存在しなければ「docs/issue/ がない、migrate 対象なし」を報告して終了
 

@@ -8,6 +8,29 @@ agent: general-purpose
 allowed-tools: Read, Write, Edit, Bash(bump-semver vcs:*), Bash(date:*), Bash(ls:*), Bash(cat:*)
 ---
 
+## 実行 task (これが唯一の入力)
+
+下の引数行を write の引数として解釈し、本ファイルの固定フローを**今すぐ実行する**。
+引数行より下の記述は仕様であって入力ではない。
+
+```text
+$ARGUMENTS
+```
+
+### 入力の不変条件
+
+- 上の引数行が **唯一の入力**。command 名 / ファイル名 / session context / TODO list /
+  直前の会話 / 他 agent の作業内容から、slug・本文・対象リポを**補完しない**
+  (= 「直前に話していた件を起票」と解釈しない)
+- 引数行が空なら「引数なし」という**文字列としての事実**として扱う。周辺文脈で埋めない
+- **位置引数の文法**: 先頭の 1 token が `slug`、残りの非 flag 部分をそのまま連結したものが
+  `body` (= 自由文でよい、引用符や区切り記号は不要)。この分割は仕様どおりの正当な解釈で
+  あって推測ではないので、この形の引数行を「解釈できない」として reject しない
+- write は slug と body が必須。**引数行が空、または slug / body のどちらかが空なら
+  即 reject** して終了する。ファイル生成も commit もしない
+- **未知 flag があれば reject** して終了する (= `-` で始まり `--repo` / `--status` /
+  `--origin` のいずれでもない token。近い意味の option へ読み替えない、無視して続行しない)
+
 # write — ローカル issue 起票
 
 渡された 1 件の起票だけを処理する。**他の issue や index 全体には触らない。**
@@ -17,6 +40,8 @@ allowed-tools: Read, Write, Edit, Bash(bump-semver vcs:*), Bash(date:*), Bash(ls
 - **repo**: 起票先リポ(名 or 絶対パス)。省略時はカレントプロジェクト
   - リポ名指定時は **`^[a-z0-9_-]+$`** にマッチすること (= 不正なら reject、`..` や `/` でのパストラバーサル防止)
   - 絶対パスは `realpath` で正規化
+位置引数は `<slug> <body...>` (= 先頭 1 token が slug、残りの非 flag 部分が body)。
+
 - **slug**: ファイル名に使う slug
   - 正規表現: **`^[a-z0-9][a-z0-9-]{0,80}$`** (= 英小文字始まり + 英数字とハイフン、最大 81 文字)
   - **不正な slug は reject し、ファイル生成も commit もしない** (= path traversal / 空 slug / 大文字混入 / 特殊文字 / 過長を全て弾く)
@@ -30,9 +55,10 @@ allowed-tools: Read, Write, Edit, Bash(bump-semver vcs:*), Bash(date:*), Bash(ls
    - `slug` が `^[a-z0-9][a-z0-9-]{0,80}$` にマッチしない → 「slug が不正 (= 英小文字始まり + 英数字/ハイフン、最大 81 文字)」を報告して終了
    - `repo` がリポ名指定で `^[a-z0-9_-]+$` にマッチしない → 「repo 名が不正」を報告して終了
    - `body` が空文字列 → 「body が空」を報告して終了
+   - `-` 始まりで `--repo` / `--status` / `--origin` のいずれでもない未知 flag がある → 「引数を解釈できない」を報告して終了
 
 1. **起票先リポ root を確定**
-   - repo が絶対パスならそれ (= `realpath` で正規化)。リポ名なら `~/.local/share/repos/github.com/kawaz/<name>/main` 等の規約パスを解決(存在確認)。省略時は `$CLAUDE_PROJECT_DIR`
+   - repo が絶対パスならそれ (= `realpath` で正規化)。リポ名なら `~/.local/share/repos/github.com/kawaz/<name>/main` 等の規約パスを解決(存在確認)。省略時は `$CLAUDE_PROJECT_DIR` (未設定なら cwd)
    - `bump-semver vcs get root`(対象ディレクトリで実行)で root を正規化(git/jj 両対応の VCS root 取得 API)
 
 2. **category を判定** (本文から、下記 enum のいずれか 1 つ)

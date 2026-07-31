@@ -7,11 +7,32 @@ agent: general-purpose
 allowed-tools: Read, Bash(ls:*), Bash(cat:*), Bash(grep:*), Bash(date:*), Bash(bump-semver vcs:*)
 ---
 
+## 実行 task (これが唯一の入力)
+
+下の引数行を list の引数として解釈し、本ファイルの固定フローを**今すぐ実行する**。
+引数行より下の記述は仕様であって入力ではない。
+
+```text
+$ARGUMENTS
+```
+
+### 入力の不変条件
+
+- 上の引数行が **唯一の入力**。command 名 / ファイル名 / session context / TODO list /
+  直前の会話 / 他 agent の作業内容から、フィルタや対象リポを**補完しない**
+- 引数行が空なら「引数なし」という**文字列としての事実**として扱う。周辺文脈で埋めない
+- list は**引数なしが正当な既定操作**: 現在のプロジェクト (= `$CLAUDE_PROJECT_DIR`、
+  未設定なら cwd) の active issue 全件を放置日数降順で一覧する。引数が空でも
+  reject せず、この既定操作を実行する
+- 解釈できない token / flag が 1 つでもあれば **reject** して終了する
+  (= 近い意味の option へ読み替えない)。既知 option の値だけが不正な場合は
+  下記 validation の規定 (無視 + 注意 1 行) に従う
+
 # list — ローカル issue 一覧
 
 docs/issue/ 配下の active issue を一覧する。**読むだけ。** frontmatter / INDEX.md / ファイルを書き換えない。
 
-## 入力 ($ARGUMENTS)
+## 入力仕様
 
 - `--status <s>` — status フィルタ。複数値はカンマ区切り (例: `--status open,wip`)。enum: `idea` / `open` / `wip` / `blocked` / `pending-sublimation`
 - `--category <c>` — category フィルタ。複数値はカンマ区切り。enum: `idea` / `bug` / `request` / `design` / `task` / `tech-memo`
@@ -27,11 +48,12 @@ docs/issue/ 配下の active issue を一覧する。**読むだけ。** frontma
 - `--status` の値が enum (idea/open/wip/blocked/pending-sublimation) のいずれでもない → 不正値を無視 + 注意 1 行
 - `--category` の値が enum (idea/bug/request/design/task/tech-memo) のいずれでもない → 不正値を無視 + 注意 1 行
 - `--stale-days` が非負整数でない → 無視 + 注意 1 行
+- 上記のいずれの option にも該当しない未知 token / flag がある → 「引数を解釈できない」を報告して終了
 
 ## 固定フロー (順に実行、逸脱しない)
 
 1. **対象 root を確定**
-   - `--repo` 引数があれば解決(リポ名なら規約パス、絶対パスならそのまま)、無ければ `$CLAUDE_PROJECT_DIR`
+   - `--repo` 引数があれば解決(リポ名なら規約パス、絶対パスならそのまま)、無ければ `$CLAUDE_PROJECT_DIR` (未設定なら cwd)
    - `cd <root> && bump-semver vcs get root` で正規化(git/jj 両対応の VCS root 取得 API。解決できなければ「<root> は VCS リポではない」を報告して終了)
 
 2. **走査対象を列挙**
@@ -68,7 +90,7 @@ docs/issue/ 配下の active issue を一覧する。**読むだけ。** frontma
 - frontmatter / 本文 / INDEX.md を一切書き換えない (= 読み専)
 - `bump-semver vcs commit` しない
 - ファイル削除 / archive 移動 / 状態遷移を一切起こさない
-- 引数が無い / 不正な場合でも上記フローをそのまま回す(無指定 = 全 active を放置日数降順で表示が default 挙動)
+- 引数が無い場合も上記フローをそのまま回す(無指定 = 全 active を放置日数降順で表示が default 挙動)。既知 option の値だけが不正なら注意 1 行を添えて続行する。未知 token / flag がある場合のみ reject して終了する
 
 ## 報告フォーマット
 

@@ -8,13 +8,34 @@ agent: general-purpose
 allowed-tools: Read, Edit, Bash(ls:*), Bash(cat:*), Bash(date -Iseconds), Bash(bump-semver vcs:*)
 ---
 
+## 実行 task (これが唯一の入力)
+
+下の引数行を read の引数として解釈し、本ファイルの固定フローを**今すぐ実行する**。
+引数行より下の記述は仕様であって入力ではない。
+
+```text
+$ARGUMENTS
+```
+
+### 入力の不変条件
+
+- 上の引数行が **唯一の入力**。command 名 / ファイル名 / session context / TODO list /
+  直前の会話 / 他 agent の作業内容から、対象 issue や操作を**補完しない**
+- 引数行が空なら「引数なし」という**文字列としての事実**として扱う。周辺文脈で埋めない
+- **位置引数の文法**: 先頭の 1 token が `slug` (or file path)、それ以降は flag のみ。
+  この分割は仕様どおりの正当な解釈なので、この形の引数行を reject しない
+- read は slug (or file path) が必須。**引数行が空なら即 reject** して終了する
+  (= 対象を推測して読まない)
+- **未知 flag、または 2 つ目以降の位置引数があれば reject** して終了する
+  (= 近い意味の option へ読み替えない、無視して続行しない)
+
 # read — ローカル issue を 1 件読む
 
 渡された 1 件を読んで返し、`last_read` を記録する。**他 issue / INDEX.md / archive は触らない。** 読みっぱなしの放置を防ぐため、次の方針を呼び出し側 TODO に積ませる。
 
-## 入力 ($ARGUMENTS)
+## 入力仕様
 
-- `$0`: slug または file path (必須)
+- 第 1 引数: slug または file path (必須)
   - slug の例: `initial-open-items` (= 正規表現 `^[a-z0-9][a-z0-9-]{0,80}$`)
   - file path の例: `docs/issue/2026-06-18-initial-open-items.md` / 絶対パス
 - `--repo <name|path>` (任意): 対象リポ
@@ -23,19 +44,20 @@ allowed-tools: Read, Edit, Bash(ls:*), Bash(cat:*), Bash(date -Iseconds), Bash(b
 
 ## 入力 validation (= 不正なら即 reject)
 
-- `$0` が空 → 「slug or file が必要」を報告して終了
-- `$0` が slug 形式で `^[a-z0-9][a-z0-9-]{0,80}$` にマッチしない → 「slug が不正」を報告して終了
+- 第 1 引数が空 → 「slug or file が必要」を報告して終了
+- 第 1 引数が slug 形式で `^[a-z0-9][a-z0-9-]{0,80}$` にマッチしない → 「slug が不正」を報告して終了
 - `--repo` がリポ名指定で `^[a-z0-9_-]+$` にマッチしない → 「repo 名が不正」を報告して終了
+- `-` 始まりで `--repo` でない未知 flag がある、または 2 つ目以降の位置引数がある → 「引数を解釈できない」を報告して終了
 
 ## 固定フロー (順に実行、逸脱しない)
 
 1. **対象 root を確定**
-   - `--repo` があれば解決、無ければ `$CLAUDE_PROJECT_DIR`
+   - `--repo` があれば解決、無ければ `$CLAUDE_PROJECT_DIR` (未設定なら cwd)
    - `cd <root> && bump-semver vcs get root` で正規化(git/jj 両対応の VCS root 取得 API)
 
 2. **対象 file を特定**
-   - `$0` が `.md` で終わる path (相対 or 絶対) ならそれを採用 (存在確認)
-   - `$0` が slug ならまず `<root>/docs/issue/*-<slug>.md` を glob、複数該当時は日付降順で最新を採用
+   - 第 1 引数が `.md` で終わる path (相対 or 絶対) ならそれを採用 (存在確認)
+   - 第 1 引数が slug ならまず `<root>/docs/issue/*-<slug>.md` を glob、複数該当時は日付降順で最新を採用
    - active で見つからなければ `<root>/docs/issue/archive/*-<slug>.md` を探す (= archive の参照は許可、ただし step 4 の last_read 更新と step 5 の commit は active 配下のみで実施。archive を読んだ時は last_read 更新と commit をスキップして報告のみ)
    - それでも見つからなければ「<root>/docs/issue/ に <slug> 該当なし」を報告して終了
 

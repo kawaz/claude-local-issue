@@ -8,6 +8,29 @@ agent: general-purpose
 allowed-tools: Read, Write, Edit, Grep, Bash(bump-semver vcs:*), Bash(mv:*), Bash(date:*), Bash(cat:*), Bash(ls:*), Bash(grep:*)
 ---
 
+## 実行 task (これが唯一の入力)
+
+下の引数行を update の引数として解釈し、本ファイルの固定フローを**今すぐ実行する**。
+引数行より下の記述は仕様であって入力ではない。
+
+```text
+$ARGUMENTS
+```
+
+### 入力の不変条件
+
+- 上の引数行が **唯一の入力**。command 名 / ファイル名 / session context / TODO list /
+  直前の会話 / 他 agent の作業内容から、対象 issue や操作を**補完しない**
+  (= ambient な棚卸し task を読み取って複数 issue を処理しない。本 command は
+  引数行が指す 1 件のみのスコープ)
+- 引数行が空なら「引数なし」という**文字列としての事実**として扱う。周辺文脈で埋めない
+- **位置引数の文法**: 先頭の 1 token が `slug` (or file path)、それ以降は flag のみ。
+  この分割は仕様どおりの正当な解釈なので、この形の引数行を reject しない
+- update は slug (or file path) が必須。**引数行が空なら即 reject** して終了する。
+  ファイル変更も commit もしない
+- **未知 flag、または 2 つ目以降の位置引数があれば reject** して終了する
+  (= 近い意味の option へ読み替えない、無視して続行しない)
+
 # update — issue 更新 / 解決
 
 渡された 1 件だけを更新する。**他 issue・index 全体に触らない。**
@@ -30,6 +53,7 @@ allowed-tools: Read, Write, Edit, Grep, Bash(bump-semver vcs:*), Bash(mv:*), Bas
 - `slug` (or file の slug 部分) が `^[a-z0-9][a-z0-9-]{0,80}$` にマッチしない → 「slug が不正」を報告して終了
 - `repo` がリポ名指定で `^[a-z0-9_-]+$` にマッチしない → 「repo 名が不正」を報告して終了
 - `status` が enum (idea/open/wip/blocked/pending-sublimation/discarded/resolved) のいずれでもない → 「status が不正」を報告して終了
+- `-` 始まりで `--status` / `--reason` / `--body-edit` / `--blocked-by` / `--repo` のいずれでもない未知 flag がある、または 2 つ目以降の位置引数がある → 「引数を解釈できない」を報告して終了
 
 ## status 変更フロー
 
