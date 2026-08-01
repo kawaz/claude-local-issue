@@ -20,27 +20,29 @@
 
 ## 裁定待ち
 
-### 👺LI-Q1: bump-semver への上流起票を push するか
-
-- [ ] a (推奨): push する
-- [ ] b: push しない (kawaz が内容を見てから判断)
-
-起票済み (ローカル commit のみ): `/Users/kawaz/.local/share/repos/github.com/kawaz/bump-semver/main/docs/issue/2026-07-31-vcs-commit-allow-nonexistent-path-hint-drops-deletions.md` (commit `578d187`)
-
-推奨理由: 内容は実機再現済みの事実と「状況証拠にとどまる」旨の明示で構成しており、部外者起票として過不足がない。先方リポは kawaz 自身の管理下。
-
 ### 👺LI-Q2: worktree 誤認 ([issue](./issue/2026-07-10-worktree-cwd-repo-misresolution.md)) をどう直すか
 
-- [ ] a (推奨): 現仕様を維持し「`--repo <name>` は必ず main を指す、worktree は絶対パスで渡す」を各 command に明記
-- [ ] b: `--repo <name>:<workspace>` のような worktree 指定構文を足す
-- [ ] c: name 解決時に worktree/workspace も探索して候補が複数なら reject
+- [ ] a (推奨): 現仕様を維持し「`--repo <name>` は必ず main を指す、別の作業場所は絶対パスで渡す」を各 command に明記
+- [ ] b: `--repo` の name 指定に作業場所を書ける構文を足す
 
-推奨理由: name はリポの識別子であって作業場所の識別子ではない。b/c は name に作業場所の意味を後付けすることになり、`~/.local/share/repos/.../main` 規約自体との整合が崩れる。a なら既存規約のまま曖昧さだけを消せる。
+推奨理由: name はリポの識別子であって作業場所の識別子ではない。b は name に作業場所の意味を後付けすることになり、`~/.local/share/repos/.../main` のパス規約自体との整合が崩れる。a なら規約を変えずに曖昧さだけ消せる。
+
+(探索して候補を推測する案は却下済み)
+
+#### 背景説明: `--repo` の現行仕様
+
+「git/jj を実行する場所 (= root) を決める引数」という理解で合っている。決め方が 3 通りある:
+
+| 指定 | 解決先 |
+|---|---|
+| `--repo <name>` | `~/.local/share/repos/github.com/kawaz/<name>/main` (末尾 `/main` 固定) |
+| `--repo <絶対パス>` | そのパスを無条件採用 |
+| 省略 | `$CLAUDE_PROJECT_DIR`、未設定なら cwd |
+
+いずれも最後に `cd <root> && bump-semver vcs get root` で正規化する。正本は [SKILL.md](../SKILL.md) の path 規約。
+
+問題は 1 行目だけで、name には作業場所の情報が無いのに `/main` を補うため、worktree/workspace を意図しても main に解決される。実測では絶対パス指定と `CLAUDE_PROJECT_DIR` 経由はどちらも worktree を正しく返した。
 
 ## 確認待ち
 
-### 👺LI-C1: v0.2.11 (優先 3 件の修正) の内容
-
-- [ ] a: close の完了条件を `bump-semver vcs is clean` にし、dirty 時は成功報告せず停止する仕様でよいか ([commands/update.md](../commands/update.md))
-- [ ] b: INDEX の順序維持を「対象行だけ canonical 位置へ再配置」とし、全体整列は migrate 専任のままでよいか ([templates/index.md](../templates/index.md))
-- [ ] c: 実 command を叩く probe を `just test` に入れず `just probe-fork` に分離した判断でよいか ([commands/test/run-fork-probe.sh](../commands/test/run-fork-probe.sh))
+(なし)
