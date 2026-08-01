@@ -2,6 +2,15 @@
 
 All notable changes per release. Follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) conventions.
 
+## [0.2.12] - 2026-08-01
+
+### Changed
+- **`--repo <name>` の適用範囲を明文化** (= リポ名指定で別 worktree / workspace を選べず main に寄る、という誤認報告への対応): `--repo <name>` は必ず `<name>/main` を指し、worktree / workspace を対象にする場合は絶対パスを渡す、を `read` / `list` / `migrate` / `write` / `update` の 5 command と `SKILL.md` の path 規約に明記。リポ名は workspace 識別子を持たないため、名前から作業場所を探索・推測する経路は追加しない
+- `commands/update.md` に他 4 command と同粒度の root 解決 (= リポ名の規約パス変換 + `cd <root> && bump-semver vcs get root` による正規化) を追加。command 単体で fallback を推測させない
+
+### Added
+- `commands/test/run-contracts.sh` に `--repo` root 解決の静的 invariant (= 5 command + `SKILL.md` の main 固定明記、5 command の VCS root 正規化明記) を追加 (test 46 → 63 pass)
+
 ## [0.2.11] - 2026-07-31
 
 ### Fixed
