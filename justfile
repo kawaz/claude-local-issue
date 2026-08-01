@@ -46,6 +46,14 @@ test: lint
 check-index-order:
     @bash commands/test/check-index-order.sh
 
+# fork 入力契約の live probe (= 実 command を temp fixture に対して叩き、空振りを検出)。
+# 実 model 呼び出しを 15 条件 × reps 回するので課金 + 数分かかり、判定対象が確率的で
+# 本質的に flaky。commands/*.md を編集した時だけ手で回す想定で `just test` には入れていない。
+#   just probe-fork              # 15 run
+#   just probe-fork --reps 3     # 45 run (率を出したい時)
+probe-fork *args:
+    @bash commands/test/run-fork-probe.sh {{args}}
+
 # CI entry (= 翻訳ペア freshness も含む)
 ci: lint test check-outdated-translations
 
