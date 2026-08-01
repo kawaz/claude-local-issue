@@ -39,7 +39,8 @@ $ARGUMENTS
 
 - **repo**: 対象リポ。省略時はカレントプロジェクト
   - リポ名指定時は **`^[a-z0-9_-]+$`** にマッチすること (= 不正なら reject、`..` や `/` でのパストラバーサル防止)
-  - 絶対パスは `realpath` で正規化
+  - リポ名なら `~/.local/share/repos/github.com/kawaz/<name>/main` 規約で解決。絶対パスは `realpath` で正規化
+  - **リポ名は必ず `<name>/main` を指す**。別の worktree / workspace を対象にしたい場合は絶対パスを渡す (名前から作業場所を探索・推測しない)
 - **slug** (or file): 対象 issue
   - slug 形式の場合の正規表現: **`^[a-z0-9][a-z0-9-]{0,80}$`** (= write skill と同じ厳密 validation、不正なら reject)
   - file path 形式 (`.md` 終端) の場合は path として直接解決
@@ -54,6 +55,12 @@ $ARGUMENTS
 - `repo` がリポ名指定で `^[a-z0-9_-]+$` にマッチしない → 「repo 名が不正」を報告して終了
 - `status` が enum (idea/open/wip/blocked/pending-sublimation/discarded/resolved) のいずれでもない → 「status が不正」を報告して終了
 - `-` 始まりで `--status` / `--reason` / `--body-edit` / `--blocked-by` / `--repo` のいずれでもない未知 flag がある、または 2 つ目以降の位置引数がある → 「引数を解釈できない」を報告して終了
+
+## 対象 root の確定 (全フロー共通、最初に実行)
+
+- `--repo` があれば解決(リポ名なら規約パス、絶対パスならそのまま)、無ければ `$CLAUDE_PROJECT_DIR` (未設定なら cwd)
+- `cd <root> && bump-semver vcs get root` で正規化(git/jj 両対応の VCS root 取得 API)
+- 以降のフローの `<root>` はここで確定した値。file path / commit は全てこの root 配下で扱う
 
 ## status 変更フロー
 

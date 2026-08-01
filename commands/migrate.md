@@ -38,6 +38,7 @@ $ARGUMENTS
 - `--repo <name|path>` (任意): 対象リポ
   - リポ名指定時は **`^[a-z0-9_-]+$`** にマッチすること (= 不正なら reject、`..` や `/` でのパストラバーサル防止)
   - `~/.local/share/repos/github.com/kawaz/<name>/main` 規約で解決。省略時は `$CLAUDE_PROJECT_DIR`
+  - **リポ名は必ず `<name>/main` を指す**。別の worktree / workspace を対象にしたい場合は絶対パスを渡す (名前から作業場所を探索・推測しない)
 
 ## 入力 validation (= 不正なら即 reject)
 

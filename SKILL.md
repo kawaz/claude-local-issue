@@ -87,6 +87,7 @@ close した issue は `docs/issue/archive/` へ **物理移動** (削除では�
 ### path 規約
 
 - リポ名 指定時の解決: `~/.local/share/repos/github.com/kawaz/<name>/main` (kawaz リポ規約)
+- **リポ名は必ず `<name>/main` を指す**。別の worktree / workspace を対象にしたい場合は絶対パスを渡す (= 名前から作業場所を探索・推測しない。名前は workspace 識別子を持たないので、候補探索は誤対象を選ぶ)
 - 絶対パス指定は無条件採用
 - 省略時は `$CLAUDE_PROJECT_DIR`
 - `cd <root> && bump-semver vcs get root` で正規化 (= git/jj 両対応の VCS root 取得 API)

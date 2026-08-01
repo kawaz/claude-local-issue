@@ -39,7 +39,7 @@ docs/issue/ 配下の active issue を一覧する。**読むだけ。** frontma
 - `--stale-days <n>` — 放置日数 n 日以上のみ
 - `--unread-only` — `last_read` が空、または `--stale-days` 指定時はその日数を超えるもののみ
 - `--include-archive` — `docs/issue/archive/` 配下も含める。デフォルトは active のみ
-- `--repo <name|path>` — 対象リポ。リポ名指定時は **`^[a-z0-9_-]+$`** にマッチすること (= 不正なら reject)。`~/.local/share/repos/github.com/kawaz/<name>/main` 規約で解決。省略時は `$CLAUDE_PROJECT_DIR`
+- `--repo <name|path>` — 対象リポ。リポ名指定時は **`^[a-z0-9_-]+$`** にマッチすること (= 不正なら reject)。`~/.local/share/repos/github.com/kawaz/<name>/main` 規約で解決。省略時は `$CLAUDE_PROJECT_DIR`。**リポ名は必ず `<name>/main` を指す**。別の worktree / workspace を対象にしたい場合は絶対パスを渡す (名前から作業場所を探索・推測しない)
 - `--stale-days <n>` の `n` は非負整数のみ受理 (= 不正なら無視 + 注意 1 行)
 
 ## 入力 validation (= 不正なら即 reject)

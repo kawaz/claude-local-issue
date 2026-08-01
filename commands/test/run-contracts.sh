@@ -173,5 +173,22 @@ for f in commands/list.md commands/migrate.md; do
 done
 
 echo ""
+echo "=== commands: --repo root resolution ==="
+
+# リポ名は canonical main 専用 (= 名前は workspace 識別子を持たない)。worktree /
+# workspace を対象にする経路は絶対パスだけ、という仕様が全 command と正本 (SKILL.md)
+# に残っていることを固定する。
+for f in commands/read.md commands/list.md commands/migrate.md commands/write.md commands/update.md SKILL.md; do
+  b=$(basename "$f")
+  assert_grep "$b pins a repo name to <name>/main" "$f" 'リポ名は必ず'
+  assert_grep "$b sends worktree / workspace targets to an absolute path" "$f" '絶対パスを渡す'
+done
+
+# root は候補を選んだ後に必ず VCS root へ正規化する (update.md も他 4 command と同粒度)
+for f in commands/read.md commands/list.md commands/migrate.md commands/write.md commands/update.md; do
+  assert_grep "$(basename "$f") normalizes the root via vcs get root" "$f" 'bump-semver vcs get root'
+done
+
+echo ""
 echo "=== Summary: $pass pass, $fail fail ==="
 [ $fail = 0 ]
