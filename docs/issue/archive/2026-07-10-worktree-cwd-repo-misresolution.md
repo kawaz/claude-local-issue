@@ -1,6 +1,6 @@
 ---
 title: --repo のリポ名指定では main 固定となり worktree / workspace を選べない
-status: open
+status: resolved
 category: bug
 created: 2026-07-10T12:22:19+09:00
 last_read:
@@ -9,10 +9,10 @@ wip_entered:
 blocked_entered:
 pending_entered:
 discarded_entered:
-resolved_entered:
+resolved_entered: 2026-08-01T22:22:47+09:00
 discard_reason:
 pending_reason:
-close_reason:
+close_reason: ["implemented:kawaz 裁定 a を採用 (探索・推測案は却下)。`--repo <name>` は必ず `<name>/main` を指し、worktree / workspace は絶対パス指定という制約を read/list/migrate/write/update の 5 command と SKILL.md path 規約に明記","implemented:update.md に他 4 command と同粒度の root 解決 (リポ名の規約変換 + `bump-semver vcs get root` 正規化) を追加","implemented:commands/test/run-contracts.sh に本仕様の静的 invariant を追加"]
 blocked_by:
 origin: LaserGuideV3 (クロスプロジェクト起票、部外者フラグ)
 ---
