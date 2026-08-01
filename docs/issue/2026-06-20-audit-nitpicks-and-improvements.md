@@ -3,7 +3,7 @@ title: ペルソナ監査の軽微改善集約 (= nitpick / improvement)
 status: idea
 category: task
 created: 2026-06-20T00:35:29+09:00
-last_read:
+last_read: 2026-08-01T22:26:39+09:00
 open_entered:
 wip_entered:
 blocked_entered:
