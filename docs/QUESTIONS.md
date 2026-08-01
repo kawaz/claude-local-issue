@@ -20,28 +20,7 @@
 
 ## 裁定待ち
 
-### 👺LI-Q2: worktree 誤認 ([issue](./issue/2026-07-10-worktree-cwd-repo-misresolution.md)) をどう直すか
-
-- [ ] a (推奨): 現仕様を維持し「`--repo <name>` は必ず main を指す、別の作業場所は絶対パスで渡す」を各 command に明記
-- [ ] b: `--repo` の name 指定に作業場所を書ける構文を足す
-
-推奨理由: name はリポの識別子であって作業場所の識別子ではない。b は name に作業場所の意味を後付けすることになり、`~/.local/share/repos/.../main` のパス規約自体との整合が崩れる。a なら規約を変えずに曖昧さだけ消せる。
-
-(探索して候補を推測する案は却下済み)
-
-#### 背景説明: `--repo` の現行仕様
-
-「git/jj を実行する場所 (= root) を決める引数」という理解で合っている。決め方が 3 通りある:
-
-| 指定 | 解決先 |
-|---|---|
-| `--repo <name>` | `~/.local/share/repos/github.com/kawaz/<name>/main` (末尾 `/main` 固定) |
-| `--repo <絶対パス>` | そのパスを無条件採用 |
-| 省略 | `$CLAUDE_PROJECT_DIR`、未設定なら cwd |
-
-いずれも最後に `cd <root> && bump-semver vcs get root` で正規化する。正本は [SKILL.md](../SKILL.md) の path 規約。
-
-問題は 1 行目だけで、name には作業場所の情報が無いのに `/main` を補うため、worktree/workspace を意図しても main に解決される。実測では絶対パス指定と `CLAUDE_PROJECT_DIR` 経由はどちらも worktree を正しく返した。
+(なし)
 
 ## 確認待ち
 
