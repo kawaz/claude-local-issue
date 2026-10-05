@@ -56,3 +56,7 @@ origin: claude-rules-personal
 - [ ] write / update の本文をファイルパスで受けるか否かの判断が記録されている
 
 ## TODO
+
+## 別件: write が INDEX の canonical 順序を守らなかった (2026-10-05)
+
+kawaz/passkey で write を実行したところ、新しい open の行が既存の wip の行の下に追加された (canonical 順序は idea → open → wip)。利用側で手で並べ直した。archive の `2026-07-06-index-sort-not-enforced-on-write-update` で対応済みのはずの事象なので、再発かどうかを裏取りしてほしい。
