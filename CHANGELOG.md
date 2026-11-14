@@ -2,6 +2,11 @@
 
 All notable changes per release. Follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) conventions.
 
+## [1.0.1] - 2026-11-15
+
+### Changed
+- `INDEX.md` shows each title whole instead of cutting it at 60 characters: the title is the only description a row has, and a cut one could hide the point of the issue
+
 ## [1.0.0] - 2026-11-14
 
 Breaking: the plugin is rebuilt as a single Claude Mods hooks module (DR-0006). Agents now read and write `docs/issue/` files directly, and the module keeps them in shape after every tool call.

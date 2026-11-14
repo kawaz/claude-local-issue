@@ -38,8 +38,6 @@ type FieldName = (typeof FIELD_ORDER)[number]
 
 /** Longest `blocked_by` / `close_ref` (DR-0006 §3): short enough to sit in an INDEX cell. */
 const SHORT_LIMIT = 30
-/** Longest title shown in INDEX.md before it is cut (DR-0006 §5). */
-const TITLE_LIMIT = 60
 /** Longest stretch of a file's own text quoted in what the agent is told (DR-0006 §7). */
 const QUOTE_LIMIT = 40
 /** Most files named in the startup summary (DR-0006 §7). */
@@ -532,11 +530,6 @@ function href(name: string): string {
   return encodeURI(name).replaceAll('(', '%28').replaceAll(')', '%29').replaceAll('#', '%23').replaceAll('?', '%3F')
 }
 
-function truncate(s: string): string {
-  const chars = [...s]
-  return chars.length > TITLE_LIMIT ? `${chars.slice(0, TITLE_LIMIT).join('')}…` : s
-}
-
 /** Position in INDEX.md: the statuses in their order, then any other value. */
 function statusRank(status: string): number {
   const i = STATUSES.findIndex((s) => s === status)
@@ -559,7 +552,7 @@ function compareEntries(a: IndexEntry, b: IndexEntry): number {
 /** The whole of INDEX.md for the active files. */
 export function renderIndex(entries: readonly IndexEntry[]): string {
   const rows = [...entries].sort(compareEntries).map((e) => {
-    const link = `[${linkText(truncate(e.title === '' ? e.name : e.title))}](./${href(e.name)})`
+    const link = `[${linkText(e.title === '' ? e.name : e.title)}](./${href(e.name)})`
     return `| ${[cell(e.date), cell(e.category), cell(e.status), link, cell(e.blockedBy)].join(' | ')} |`
   })
   return [INDEX_NOTICE, '', '| date | category | status | issue | blocked_by |', '|---|---|---|---|---|', ...rows, ''].join('\n')

@@ -93,7 +93,7 @@ close した issue を開き直す時は、`archive/` の中で `status` を書�
 
 ## INDEX.md
 
-`docs/issue/` の何かが変わるたびに active な issue 全部から作り直し、文面が変わる時だけ書く。列は `| date | category | status | issue | blocked_by |`。`date` はファイル名の日付、`issue` は title へのリンク (60 文字を超えたら切って `…` を付ける)。並びは status (`idea` → `open` → `wip` → `blocked`、その後に指摘が残って active に留まっているもの)、同じ status の中は日付の新しい順、同じ日付は slug の順。
+`docs/issue/` の何かが変わるたびに active な issue 全部から作り直し、文面が変わる時だけ書く。列は `| date | category | status | issue | blocked_by |`。`date` はファイル名の日付、`issue` は title へのリンク。並びは status (`idea` → `open` → `wip` → `blocked`、その後に指摘が残って active に留まっているもの)、同じ status の中は日付の新しい順、同じ日付は slug の順。
 
 ## agent への知らせ
 

@@ -72,7 +72,7 @@ close した issue を開き直す時は、`archive/` の中で `status` を書�
 
 active の全ファイルの frontmatter から毎回全体を生成し、内容が変わる時だけ書く。
 
-- 列: `| date | category | status | issue | blocked_by |`。`issue` は `[<title>](./<ファイル名>)` で、title は 60 文字を超えたら切って `…` を付ける。`date` はファイル名の日付
+- 列: `| date | category | status | issue | blocked_by |`。`issue` は `[<title>](./<ファイル名>)` で、title は長くても切らない (一覧で issue を見分ける唯一の説明なので)。`date` はファイル名の日付
 - 並び: status の順 (`idea` → `open` → `wip` → `blocked`)、同じ status の中は日付の新しい順、同じ日付は slug の順
 - 指摘が残っているファイルも載せる (不正な値はそのまま表示する)
 - 冒頭に「自動生成。手で編集しない」旨を本文として 1 行書く

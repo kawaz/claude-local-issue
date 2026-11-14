@@ -93,7 +93,7 @@ To reopen a closed issue, change its `status` inside `archive/` first, then move
 
 ## INDEX.md
 
-Regenerated from all active issues whenever something in `docs/issue/` changes, and written only when its text changes. Columns: `| date | category | status | issue | blocked_by |`, where `date` is the date in the file name and `issue` links the title (cut at 60 characters with `…`). Rows are ordered by status (`idea` → `open` → `wip` → `blocked`, then files kept active by something pointed out), then newest date first, then slug.
+Regenerated from all active issues whenever something in `docs/issue/` changes, and written only when its text changes. Columns: `| date | category | status | issue | blocked_by |`, where `date` is the date in the file name and `issue` links the title. Rows are ordered by status (`idea` → `open` → `wip` → `blocked`, then files kept active by something pointed out), then newest date first, then slug.
 
 ## What the agent is told
 

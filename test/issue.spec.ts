@@ -500,11 +500,10 @@ describe('renderIndex', () => {
     expect(rows).toEqual(['2026-01-01-i.md', '2026-02-01-a.md', '2026-02-01-b.md', '2026-01-01-z.md', '2026-03-01-w.md', '2026-05-01-k.md', '2026-05-01-r.md', '2026-05-01-q.md'])
   })
 
-  // A title over 60 characters is cut at 60 and gets `…`; exactly 60 is kept.
-  test('long titles are cut at 60 characters', () => {
-    const sixty = 'あ'.repeat(60)
-    expect(renderIndex([entry(NAME, 'open', sixty)])).toContain(`[${sixty}](`)
-    expect(renderIndex([entry(NAME, 'open', `${sixty}い`)])).toContain(`[${sixty}…](`)
+  // The title is the only description a row has, so INDEX.md shows it whole however long it is.
+  test('a long title is shown whole', () => {
+    const long = 'あ'.repeat(200)
+    expect(renderIndex([entry(NAME, 'open', long)])).toContain(`[${long}](`)
   })
 
   // A `|` in a value would split the table cell; `[`/`]` would break the link;
