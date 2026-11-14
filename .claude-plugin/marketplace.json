@@ -5,7 +5,7 @@
   },
   "metadata": {
     "description": "docs/issue/ tracker that agents edit directly, kept in shape by a Claude Mods hooks module",
-    "version": "1.0.2"
+    "version": "1.0.3"
   },
   "plugins": [
     {
