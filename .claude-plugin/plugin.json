@@ -1,7 +1,7 @@
 {
   "name": "local-issue",
   "description": "Keeps docs/issue/ in shape while agents edit issue files directly: a Claude Mods hooks module normalizes the frontmatter, regenerates INDEX.md and moves closed issues to archive/ after every tool call. No commands, no skills, no tools, no commits.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": {
     "name": "kawaz"
   },
