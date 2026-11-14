@@ -1,9 +1,11 @@
 ---
 title: 利用側のセッションで不便だった点 (archive への移動で相対リンクが切れる、close_reason の指摘が close_ref に触れない、INDEX.md の差分が worker の間に残る)
-status: open
+status: resolved
 category: request
 created: 2026-11-15T07:45:00+09:00
 origin: pam-passkey のセッションから (利用側で気づいた)
+close_reason: implemented
+close_ref: v1.0.2
 ---
 
 # 利用側のセッションで不便だった点
