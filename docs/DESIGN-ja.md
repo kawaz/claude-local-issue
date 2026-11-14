@@ -19,7 +19,7 @@ kawaz のリポ群で `docs/issue/` の INDEX と status 管理の型を揃え�
 
 issue は 1 件 1 ファイル (`docs/issue/YYYY-MM-DD-<slug>.md`)。運用は GitHub flow のような厳密な管理ではなく、自リポの TODO・他プロジェクトからの依頼・セッションを跨ぐメモを置く一段ゆるいもの。
 
-- **status**: `idea` / `open` / `wip` / `blocked` / `resolved` / `discarded`。`blocked` は理由 (`blocked_by`) を、`resolved` / `discarded` は分類 (`close_reason`) と任意の根拠の参照 (`close_ref`) を伴う。`blocked_by` と `close_ref` は日本語 30 文字相当まで (ASCII の文字は 0.5 と数える) で、INDEX のセルに段落でなく理由か名前として収まる長さにする
+- **status**: `idea` / `open` / `wip` / `blocked` / `resolved` / `discarded`。`blocked` は理由 (`blocked_by`) を、`resolved` / `discarded` は分類 (`close_reason`) と任意の根拠の参照 (`close_ref`) を伴う。`blocked_by` と `close_ref` は日本語 40 文字相当まで (ASCII の文字は 0.5 と数え、英数字だけなら 80 文字まで) で、INDEX のセルに段落でなく理由か名前として収まる長さにする
 - **category**: `idea` / `bug` / `request` / `design` / `task` / `tech-memo`。書く側が決め、plugin は enum かどうかだけを見る
 - **created**: 起票日。放置の目安はこれだけで、status が変わった時刻は記録しない
 - **origin**: 依頼元のプロジェクト (他プロジェクトからの起票の時)

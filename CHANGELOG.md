@@ -2,6 +2,11 @@
 
 All notable changes per release. Follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) conventions.
 
+## [1.0.3] - 2026-11-15
+
+### Changed
+- The limit of `blocked_by` and `close_ref` is 40 instead of 30 (about 40 Japanese characters; an ASCII character still counts 0.5, so an ASCII-only value fits up to 80). The point on a longer value says `日本語 40 文字相当まで`
+
 ## [1.0.2] - 2026-11-15
 
 ### Changed

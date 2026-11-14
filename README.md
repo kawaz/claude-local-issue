@@ -69,16 +69,16 @@ The fields, in this order. A field outside the table is removed when its value i
 | `category` | yes | `idea` / `bug` / `request` / `design` / `task` / `tech-memo` | pointed out (no default); case and surrounding spaces are fixed |
 | `created` | yes | ISO 8601 date or date-time, on the calendar | filled from the date in the file name |
 | `origin` | no | the project that asked for it | kept as written |
-| `blocked_by` | while `status: blocked` | a reason of up to about 30 Japanese characters (a ruling awaited in `docs/QUESTIONS.md` starts with its label), or the slug of the issue it waits for | pointed out when missing or longer; removed under any other status |
+| `blocked_by` | while `status: blocked` | a reason of up to about 40 Japanese characters (a ruling awaited in `docs/QUESTIONS.md` starts with its label), or the slug of the issue it waits for | pointed out when missing or longer; removed under any other status |
 | `close_reason` | while `resolved` / `discarded` | `implemented` / `documented` / `discarded` / `duplicate` | pointed out when missing or invalid; removed under any other status |
-| `close_ref` | no | up to about 30 Japanese characters: the reference behind the close (a DR number, a version, a finding's slug) | pointed out when longer; removed under a non-closing status |
+| `close_ref` | no | up to about 40 Japanese characters: the reference behind the close (a DR number, a version, a finding's slug) | pointed out when longer; removed under a non-closing status |
 
 How the frontmatter is read:
 
 - One `field: value` per line. Quotes around a value are removed, and outside quotes ` #` starts a comment (`status: open # memo` is `open`). Comment-only lines and blank lines are dropped when the frontmatter is written back
 - Field names are read in lower case (`Title:` is written back as `title:`); when two lines become the same field, the first one is kept. `field:value` without a space counts only for the eight field names above, so a line such as a URL is not taken for a field
 - A value that spans several lines is kept whole and pointed out, whatever the field
-- The limit of `blocked_by` and `close_ref` is about 30 Japanese characters: an ASCII character (code point below 0x80) counts 0.5 and any other 1, and a total over 30 is pointed out. An ASCII-only slug fits up to 60 characters
+- The limit of `blocked_by` and `close_ref` is about 40 Japanese characters: an ASCII character (code point below 0x80) counts 0.5 and any other 1, and a total over 40 is pointed out. An ASCII-only value fits up to 80 characters
 - A `blocked_by` / `close_ref` written as a one-element list (`[value]`, no comma inside) is written back as the value; a list of two or more is kept as one value
 - While `status` is invalid, `blocked_by` / `close_reason` / `close_ref` are kept, so that no reason is lost on the way to fixing the status
 - A leading BOM is kept, and the frontmatter is read after it

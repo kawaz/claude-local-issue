@@ -69,16 +69,16 @@ plugin だけでは決められないもの (この例では `category`) は、�
 | `category` | 必須 | `idea` / `bug` / `request` / `design` / `task` / `tech-memo` | 指摘 (既定値を持たない)。大文字と前後の空白は直す |
 | `created` | 必須 | 暦にある ISO 8601 の日付か日時 | ファイル名の日付で補う |
 | `origin` | 任意 | 依頼元のプロジェクト | 書かれたまま |
-| `blocked_by` | `status: blocked` の時 | 日本語 30 文字相当までの理由 (`docs/QUESTIONS.md` の裁定待ちはそのラベルを先頭に書く) か、待っている issue の slug | 無い・長い時は指摘。他の status では消す |
+| `blocked_by` | `status: blocked` の時 | 日本語 40 文字相当までの理由 (`docs/QUESTIONS.md` の裁定待ちはそのラベルを先頭に書く) か、待っている issue の slug | 無い・長い時は指摘。他の status では消す |
 | `close_reason` | `resolved` / `discarded` の時 | `implemented` / `documented` / `discarded` / `duplicate` | 無い・不正な時は指摘。他の status では消す |
-| `close_ref` | 任意 | 日本語 30 文字相当まで。close の根拠の参照 (DR 番号、版、finding の slug) | 長い時は指摘。close する status 以外では消す |
+| `close_ref` | 任意 | 日本語 40 文字相当まで。close の根拠の参照 (DR 番号、版、finding の slug) | 長い時は指摘。close する status 以外では消す |
 
 frontmatter の読み方:
 
 - `欄: 値` を 1 行ずつ読む。値の引用符は外し、引用符の外の ` #` 以降はコメントとして読まない (`status: open # memo` は `open`)。コメントだけの行と空行は書き戻す時に消える
 - 欄の名前は小文字として読む (`Title:` は `title:` で書き戻す)。同じ欄が 2 つになれば最初のものを残す。空白の無い `欄:値` を欄として読むのは上の 8 つの名前の時だけで、URL のような行を欄と取り違えない
 - 値が複数行にわたる欄は、どの欄でも値ごと残して指摘する
-- `blocked_by` と `close_ref` の上限は日本語で 30 文字程度。ASCII の文字 (コードポイントが 0x80 未満) を 1 文字 0.5、それ以外を 1 と数え、合計が 30 を超えたら指摘する。英数字だけの slug なら 60 文字まで入る
+- `blocked_by` と `close_ref` の上限は日本語で 40 文字程度。ASCII の文字 (コードポイントが 0x80 未満) を 1 文字 0.5、それ以外を 1 と数え、合計が 40 を超えたら指摘する。英数字だけなら 80 文字まで入る
 - `blocked_by` / `close_ref` を要素 1 つの配列 (`[値]`、中に `,` が無い) で書いた時は、括弧を外して書き戻す。要素が 2 つ以上の配列はそのまま 1 つの値として扱う
 - `status` が不正な間は、status を直す途中で理由が失われないよう `blocked_by` / `close_reason` / `close_ref` を消さない
 - 先頭の BOM は残し、その後ろを frontmatter として読む

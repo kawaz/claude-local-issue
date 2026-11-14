@@ -381,23 +381,23 @@ describe('normalizeIssue: field names and lines', () => {
 describe('normalizeIssue: blocked', () => {
   const head = ['title: t', 'status: blocked', 'category: task', 'created: 2026-11-14']
 
-  // blocked needs a reason, and the limit is about 30 Japanese characters:
+  // blocked needs a reason, and the limit is about 40 Japanese characters:
   // a character below 0x80 (ASCII) counts 0.5, any other 1, and a total over
-  // 30 is pointed out. So 30 Japanese pass and 31 do not; 60 ASCII pass and
-  // 61 do not; mixed values are summed (30 and 30.5 are the edge).
-  test('blocked_by is required and limited to 30, ASCII counting half', () => {
+  // 40 is pointed out. So 40 Japanese pass and 41 do not; 80 ASCII pass and
+  // 81 do not; mixed values are summed (40 and 40.5 are the edge).
+  test('blocked_by is required and limited to 40, ASCII counting half', () => {
     expectProblems(normalizeIssue(NAME, fm(...head)), 'status: blocked には blocked_by が要る。frontmatter に blocked_by: を足し')
     const passes = (v: string): void => expect(normalizeIssue(NAME, fm(...head, `blocked_by: ${v}`)).problems).toEqual([])
     const fails = (v: string, now: string): void =>
       expect(normalizeIssue(NAME, fm(...head, `blocked_by: ${v}`)).problems).toEqual([
-        `blocked_by が長い (日本語 30 文字相当まで。ASCII は 0.5 文字と数えて今 ${now})。縮める`,
+        `blocked_by が長い (日本語 40 文字相当まで。ASCII は 0.5 文字と数えて今 ${now})。縮める`,
       ])
-    passes('あ'.repeat(30))
-    fails('あ'.repeat(31), '31')
-    passes('a'.repeat(60))
-    fails('a'.repeat(61), '30.5')
-    passes(`${'あ'.repeat(20)}${'a'.repeat(20)}`)
-    fails(`${'あ'.repeat(20)}${'a'.repeat(21)}`, '30.5')
+    passes('あ'.repeat(40))
+    fails('あ'.repeat(41), '41')
+    passes('a'.repeat(80))
+    fails('a'.repeat(81), '40.5')
+    passes(`${'あ'.repeat(20)}${'a'.repeat(40)}`)
+    fails(`${'あ'.repeat(20)}${'a'.repeat(41)}`, '40.5')
     expect(normalizeIssue(NAME, fm(...head, 'blocked_by: Q3 待ち')).entry.blockedBy).toBe('Q3 待ち')
   })
 
@@ -411,7 +411,8 @@ describe('normalizeIssue: blocked', () => {
     expect(one.problems).toEqual([])
     expect(one.entry.blockedBy).toBe('some-long-slug-over-thirty-characters-long')
     expect(normalizeIssue(NAME, fm(...head, 'blocked_by: ["Q1 裁定待ち"]')).text).toContain('\nblocked_by: Q1 裁定待ち\n')
-    const twoValues = '[Q1 の裁定と Q2 の裁定の両方を待っている, 別リポの issue の完了も待っている]'
+    // Over the limit of 40 as a whole (the two elements together), so it is pointed out.
+    const twoValues = '[Q1 の裁定と Q2 の裁定の両方を待っている, 別リポの issue の完了とその後の確認も待っている]'
     const two = normalizeIssue(NAME, fm(...head, `blocked_by: ${twoValues}`))
     expect(two.text).toContain(`\nblocked_by: ${twoValues}\n`)
     expectProblems(two, 'blocked_by が長い')
@@ -456,20 +457,21 @@ describe('normalizeIssue: close', () => {
     expect(odd.problems[0]).toContain('(理由や参照先は close_ref か本文に書く)')
   })
 
-  // close_ref is optional, up to about 30 Japanese characters; over that it is pointed out
+  // close_ref is optional, up to about 40 Japanese characters; over that it is pointed out
   // and blocks the move like any other problem.
-  test('close_ref over 30 characters is pointed out', () => {
-    const r = normalizeIssue(NAME, fm(...head('resolved'), 'close_reason: documented', `close_ref: ${'理'.repeat(31)}`))
-    expectProblems(r, 'close_ref が長い (日本語 30 文字相当まで。ASCII は 0.5 文字と数えて今 31)')
+  test('close_ref over 40 characters is pointed out', () => {
+    expect(normalizeIssue(NAME, fm(...head('resolved'), 'close_reason: documented', `close_ref: ${'理'.repeat(40)}`)).isClosed).toBe(true)
+    const r = normalizeIssue(NAME, fm(...head('resolved'), 'close_reason: documented', `close_ref: ${'理'.repeat(41)}`))
+    expectProblems(r, 'close_ref が長い (日本語 40 文字相当まで。ASCII は 0.5 文字と数えて今 41)')
     expect(r.isClosed).toBe(false)
   })
 
   // close_ref follows the same rules as blocked_by: ASCII counts half (a
-  // 57-character path is 28.5 and passes, 61 ASCII characters are 30.5 and do
+  // 77-character path is 38.5 and passes, 81 ASCII characters are 40.5 and do
   // not), and a one-element list is unwrapped.
   test('close_ref: ASCII counts half, one-element lists unwrapped', () => {
-    expect(normalizeIssue(NAME, fm(...head('resolved'), 'close_reason: documented', `close_ref: docs/findings/${'x'.repeat(40)}.md`)).isClosed).toBe(true)
-    expectProblems(normalizeIssue(NAME, fm(...head('resolved'), 'close_reason: documented', `close_ref: ${'x'.repeat(61)}`)), 'close_ref が長い')
+    expect(normalizeIssue(NAME, fm(...head('resolved'), 'close_reason: documented', `close_ref: docs/findings/${'x'.repeat(60)}.md`)).isClosed).toBe(true)
+    expectProblems(normalizeIssue(NAME, fm(...head('resolved'), 'close_reason: documented', `close_ref: ${'x'.repeat(81)}`)), 'close_ref が長い')
     const r = normalizeIssue(NAME, fm(...head('resolved'), 'close_reason: implemented', 'close_ref: [v1.0.2]'))
     expect(r.text).toContain('\nclose_ref: v1.0.2\n')
     expect(r.fixes).toEqual(['close_ref を直した'])

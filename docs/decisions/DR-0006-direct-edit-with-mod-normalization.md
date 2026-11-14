@@ -46,9 +46,9 @@ mod が扱うのは `docs/issue/` 直下の `.md` (INDEX.md と README で始ま
 | `category` | 必須 | `idea` / `bug` / `request` / `design` / `task` / `tech-memo` | 指摘 (既定値を持たない。大文字と前後の空白は直す) |
 | `created` | 必須 | ISO8601 の日付か日時 | ファイル名の日付で補う |
 | `origin` | 任意 | 依頼元のプロジェクト名 | そのまま |
-| `blocked_by` | `status: blocked` の時は必須 | 30 文字以内。裁定待ちは `docs/QUESTIONS.md` のラベルを先頭に書く。他の issue を待つ時はその slug を書く | `blocked` で無ければ指摘。30 文字を超えたら指摘。`blocked` 以外の status では消す |
+| `blocked_by` | `status: blocked` の時は必須 | 40 文字以内。裁定待ちは `docs/QUESTIONS.md` のラベルを先頭に書く。他の issue を待つ時はその slug を書く | `blocked` で無ければ指摘。40 文字を超えたら指摘。`blocked` 以外の status では消す |
 | `close_reason` | `resolved` / `discarded` の時は必須 | `implemented` / `documented` / `discarded` / `duplicate` | close する status で無い・不正なら指摘。それ以外の status では消す |
-| `close_ref` | 任意 | 30 文字以内。根拠の参照 (DR 番号、版、finding の slug) | 30 文字を超えたら指摘。close する status 以外では消す |
+| `close_ref` | 任意 | 40 文字以内。根拠の参照 (DR 番号、版、finding の slug) | 40 文字を超えたら指摘。close する status 以外では消す |
 
 - frontmatter が無いファイルには mod が足す
 - 欄の名前の大文字は小文字に直す (`Title:` は `title:` として読む)。同じ欄が 2 つあれば最初のものを残して消す
@@ -57,7 +57,7 @@ mod が扱うのは `docs/issue/` 直下の `.md` (INDEX.md と README で始ま
 - 次のファイルには触れずに指摘する: frontmatter が閉じていない、frontmatter の中に conflict の印 (`<<<<<<<` `=======` `>>>>>>>` `%%%%%%%` `+++++++` `-------` で始まる行) がある、frontmatter の `---` の前に空行や他の行がある
 - 先頭の BOM は保ったまま、その後ろを frontmatter として読む
 - 日付 (ファイル名、`created`) は暦として正しいものだけを受け入れる
-- 30 文字の上限は日本語で 30 文字程度という意味で、ASCII の文字は 1 文字を 0.5 と数える (英数字だけの slug なら 60 文字まで入る)
+- 40 文字の上限は日本語で 40 文字程度という意味で、ASCII の文字は 1 文字を 0.5 と数える (英数字だけの slug なら 80 文字まで入る)。待つ対象と、その後どうするかを 1 文で書ける長さで、文が 2 つになる長さは通さない
 - `blocked_by` と `close_ref` の値が `[値]` の形 (要素が 1 つの配列) なら、括弧を外して直す
 - `status` が不正な間は、`blocked_by` / `close_reason` / `close_ref` を消さない (status を直す途中で理由が失われないように)
 - ファイル名が置き場の形に合わないものは指摘する (mod は改名しない)

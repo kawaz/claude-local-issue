@@ -19,7 +19,7 @@ What it must not add:
 
 One issue is one file (`docs/issue/YYYY-MM-DD-<slug>.md`). The practice is looser than a GitHub-flow tracker: the repository's own TODOs, requests from other projects, and notes that carry a discussion across sessions.
 
-- **status**: `idea` / `open` / `wip` / `blocked` / `resolved` / `discarded`. `blocked` carries a reason (`blocked_by`); `resolved` / `discarded` carry a classification (`close_reason`) and an optional reference (`close_ref`). `blocked_by` and `close_ref` are short: about 30 Japanese characters, an ASCII character counted as 0.5, so they fit an INDEX cell as a reason or a name rather than a paragraph
+- **status**: `idea` / `open` / `wip` / `blocked` / `resolved` / `discarded`. `blocked` carries a reason (`blocked_by`); `resolved` / `discarded` carry a classification (`close_reason`) and an optional reference (`close_ref`). `blocked_by` and `close_ref` are short: about 40 Japanese characters (an ASCII-only value up to 80), an ASCII character counted as 0.5, so they fit an INDEX cell as a reason or a name rather than a paragraph
 - **category**: `idea` / `bug` / `request` / `design` / `task` / `tech-memo`. The writer decides it; the plugin only checks it is one of these
 - **created**: the filing date, the only measure of staleness. When a status changed is not recorded
 - **origin**: the project that asked for it (when filed from another project)

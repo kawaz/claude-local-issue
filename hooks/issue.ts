@@ -37,11 +37,11 @@ const FIELD_ORDER = [
 type FieldName = (typeof FIELD_ORDER)[number]
 
 /**
- * Longest `blocked_by` / `close_ref` (DR-0006 §3): about 30 Japanese
+ * Longest `blocked_by` / `close_ref` (DR-0006 §3): about 40 Japanese
  * characters, with an ASCII character counted as half (so an ASCII slug fits
- * up to 60). Short enough to sit in an INDEX cell as a reason, not a paragraph.
+ * up to 80). Short enough to sit in an INDEX cell as a reason, not a paragraph.
  */
-const SHORT_LIMIT = 30
+const SHORT_LIMIT = 40
 /** A one-element YAML list (`[x]`, no comma inside): what is meant is the element. */
 const ONE_ELEMENT_LIST = /^\[([^,[\]]*)\]$/
 /** Longest stretch of a file's own text quoted in what the agent is told (DR-0006 §7). */
