@@ -1,9 +1,11 @@
 ---
 title: v1.0.0 への移行で hyoui が踏んだ点 (値の入った欄が黙って消える、INDEX の題名が切れる)
-status: open
+status: resolved
 category: request
 created: 2026-11-15T07:40:00+09:00
 origin: hyoui
+close_reason: implemented
+close_ref: v1.0.2
 ---
 
 # v1.0.0 への移行で hyoui が踏んだ点 (値の入った欄が黙って消える、INDEX の題名が切れる)
