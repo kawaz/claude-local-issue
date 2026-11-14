@@ -1,20 +1,11 @@
 ---
 title: update の status 置換が BSD sed の 0,/re/ 非対応で失敗する
-status: open
+status: resolved
 category: bug
 created: 2026-10-18T14:17:14+09:00
-last_read:
-open_entered: 2026-10-18T14:17:14+09:00
-wip_entered:
-blocked_entered:
-pending_entered:
-discarded_entered:
-resolved_entered:
-discard_reason:
-pending_reason:
-close_reason:
-blocked_by:
 origin: claude-ccmsg
+close_reason: implemented
+close_ref: DR-0006
 ---
 
 # update の status 置換が BSD sed の 0,/re/ 非対応で失敗する

@@ -1,20 +1,11 @@
 ---
 title: templates の HTML コメントをやめる (生成される INDEX.md / issue に見えない記述が残る)
-status: open
+status: resolved
 category: request
 created: 2026-10-04T13:17:55+09:00
-last_read:
-open_entered: 2026-10-04T13:17:55+09:00
-wip_entered:
-blocked_entered:
-pending_entered:
-discarded_entered:
-resolved_entered:
-discard_reason:
-pending_reason:
-close_reason:
-blocked_by:
 origin: claude-rules-personal
+close_reason: implemented
+close_ref: DR-0006
 ---
 
 # templates の HTML コメントをやめる (生成される INDEX.md / issue に見えない記述が残る)

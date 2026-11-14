@@ -3,17 +3,6 @@ title: SessionStart 促しの件数しきい値を運用データで確定する
 status: open
 category: task
 created: 2026-06-20T00:01:31+09:00
-last_read:
-open_entered: 2026-06-20T00:01:31+09:00
-wip_entered:
-blocked_entered:
-pending_entered:
-discarded_entered:
-resolved_entered:
-discard_reason:
-pending_reason:
-close_reason:
-blocked_by:
 origin: initial-open-items から分離 (= initial-open-items 本体 close 時に残る運用判定事項)
 ---
 

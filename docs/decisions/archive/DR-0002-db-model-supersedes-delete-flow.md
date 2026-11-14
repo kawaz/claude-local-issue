@@ -1,6 +1,6 @@
 # DR-0002: 削除運用を archive+DB モデルへ発展させ、status/category enum を確定する
 
-- Status: Active
+- Status: Superseded by DR-0006
 - Date: 2026-06-18
 
 ## Context

@@ -1,6 +1,6 @@
 # DR-0001: issue 操作を sub-command に隔離する
 
-- Status: Active (= Decision の中核は維持、配置判断 `commands/skills` 混在の部分のみ Superseded by DR-0003)
+- Status: Superseded by DR-0006
 - Date: 2026-06-18
 - 注: ファイル名の `skill-over-hook-isolation` は起票時の固有名詞として保持 (= 履歴的識別子)。本文の「skill」「command/skill」は DR-0003 確定以降 sub-command に統一
 

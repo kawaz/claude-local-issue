@@ -1,8 +1,13 @@
 {
   "name": "local-issue",
-  "description": "Local docs/issue/ tracker as a set of low-cost-model sub-commands (write/list/read/update/migrate). Keeps issue CRUD, index maintenance, and VCS commit out of the main session context.",
-  "version": "0.2.12",
-  "author": { "name": "kawaz" },
+  "description": "Keeps docs/issue/ in shape while agents edit issue files directly: a Claude Mods hooks module normalizes the frontmatter, regenerates INDEX.md and moves closed issues to archive/ after every tool call. No commands, no skills, no tools, no commits.",
+  "version": "1.0.0",
+  "author": {
+    "name": "kawaz"
+  },
   "license": "MIT",
-  "repository": "https://github.com/kawaz/claude-local-issue"
+  "repository": "https://github.com/kawaz/claude-local-issue",
+  "engines": {
+    "claude-code": ">=2.1.325"
+  }
 }

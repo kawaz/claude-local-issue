@@ -1,20 +1,11 @@
 ---
 title: read 放置 → unread 戻しの stale-days しきい値を運用データで確定する
-status: open
+status: discarded
 category: task
 created: 2026-06-20T00:00:13+09:00
-last_read:
-open_entered: 2026-06-20T00:00:13+09:00
-wip_entered:
-blocked_entered:
-pending_entered:
-discarded_entered:
-resolved_entered:
-discard_reason:
-pending_reason:
-close_reason:
-blocked_by:
 origin: initial-open-items から分離 (= initial-open-items 本体 close 時に残る運用判定事項)
+close_reason: discarded
+close_ref: DR-0006
 ---
 
 # read 放置 → unread 戻しの stale-days しきい値を運用データで確定する

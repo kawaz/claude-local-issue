@@ -1,20 +1,11 @@
 ---
 title: write の slug 解釈が本文の先頭 ASCII 単語に引きずられる
-status: open
+status: resolved
 category: bug
 created: 2026-09-09T18:34:54+09:00
-last_read:
-open_entered: 2026-09-09T18:34:54+09:00
-wip_entered:
-blocked_entered:
-pending_entered:
-discarded_entered:
-resolved_entered:
-discard_reason:
-pending_reason:
-close_reason:
-blocked_by:
 origin: ccmsg
+close_reason: implemented
+close_ref: DR-0006
 ---
 
 # write の slug 解釈が本文の先頭 ASCII 単語に引きずられる

@@ -1,12 +1,21 @@
-# Decision Records INDEX
+# Decision Records 一覧
 
-## Active
+Status は各 DR ファイルの `Status:` 行が正本。ここに載るのは今立っている DR だけで、置き換えられた DR は [archive/INDEX.md](archive/INDEX.md) にある。
 
-- [DR-0001](./DR-0001-skill-over-hook-isolation.md) — issue 操作を sub-command に隔離する (= 配置判断のみ Superseded by DR-0003)
-- [DR-0002](./DR-0002-db-model-supersedes-delete-flow.md) — 削除運用を archive+DB モデルへ発展させ、status/category enum を確定する
-- [DR-0003](./DR-0003-commands-unification-and-migrate.md) — commands 配置統一 + plugin root SKILL.md + migrate 新設 + frontmatter audience 区別
-- [DR-0005](./DR-0005-update-input-format-natural-language-only.md) — update sub-command の入力形式は自然文一本を維持 (= Edit ペア配列 / section 指定は不採用、Q2/Q5 のみ追記)
+状態は絵文字とラベルだけ。日付・Phase・裁定の内訳は各 DR 本文に書く。
 
-## Reserved
+- `💭 提案`: Decision がまだ裁定されていない。実装に着手しない (本文の `Status: Proposed`)
+- `✅ 実装済`: Decision の全部に実装エビデンスがある
+- `🟡 部分実装`: 一部のみ実装
+- `⬜ 未実装`: 裁定済みで設計のみ、実装エビデンスなし (着手してよい)
+- `🚧 進行中`: 実装の途中
+- `N/A`: 実装対象でない (命名・思想・プロセス等)
+- `❌ 撤退`: 撤退判断済
 
-- **DR-0004**: 欠番。`read-stale-days-threshold` / `sessionstart-count-threshold` issue の運用観察結果が確定した時点で予約使用予定 (= しきい値 + 規約確定の DR)。空けておく方が確定後の番号採番でブレない
+| DR | 状態 | 説明 |
+|---|---|---|
+| [DR-0006](DR-0006-direct-edit-with-mod-normalization.md) | ✅ 実装済 | issue は直接編集し、mod が frontmatter と INDEX を揃える |
+
+## 予約
+
+- **DR-0004**: 起動時の件数の知らせのしきい値 (`CLAUDE_LOCAL_ISSUE_COUNT_THRESHOLD`、既定 5) を運用の観察から確定する時のために空けてある

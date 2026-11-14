@@ -2,6 +2,30 @@
 
 All notable changes per release. Follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) conventions.
 
+## [1.0.0] - 2026-11-14
+
+Breaking: the plugin is rebuilt as a single Claude Mods hooks module (DR-0006). Agents now read and write `docs/issue/` files directly, and the module keeps them in shape after every tool call.
+
+### Added
+- `hooks/register.ts` / `hooks/issue.ts`: after each tool call (main session and subagents), detect changed files in the watched `docs/issue/` directories by listing and hash, normalize the frontmatter, regenerate `INDEX.md` when its text changes, and move closed issues to `archive/`. Repairs finish before the tool result is returned
+- Watching another repository's `docs/issue/` once a Write / Edit `file_path` or a Bash command names a path in it; there only the files this session's tools change are normalized, and nothing is written when nothing changed
+- Startup pass over the working directory's `docs/issue/`, with one summary on the first prompt (fixes, remaining points, and the count with the oldest three from `CLAUDE_LOCAL_ISSUE_COUNT_THRESHOLD`, default 5)
+- Fixes are told as one line on the triggering tool's result, with `INDEX.md を更新した` once per place whose INDEX was rewritten; points to fix are appended to the conversation of the agent (or subagent, falling back to the main session) that ran the tool, once per file content, and sent again when they reached no conversation
+- Files the module cannot cut safely are pointed out and left untouched: an unclosed frontmatter, conflict marks inside it, lines before its first `---`. A value over several lines is kept and pointed out. A closed file is read again right before its move to `archive/`
+- `engines` in `plugin.json`: Claude Code `>=2.1.325`
+- Unit tests for the pure decisions (`bun test`, `test/`), tests that drive the hooks module through the engine with an in-memory file system (`claude plugin test`, `tests/`), type checking against the engine's type definitions, and oxlint rules forbidding `as` / `any` / non-null assertions
+
+### Changed
+- Field names are read in lower case (`Title:` becomes `title:`); outside quotes ` #` starts a comment; dates (file name, `created`) must be on the calendar; `index.md` / `readme.md` in lower case are not issues either
+- Frontmatter is now `title` / `status` / `category` / `created` / `origin` / `blocked_by` / `close_reason` / `close_ref` in that order. Other fields (`last_read`, `*_entered`, `discard_reason`, `pending_reason`, ...) are removed, and empty optional fields are not written
+- `status` no longer has `pending-sublimation` (read as `open`). `close_reason` is one of `implemented` / `documented` / `discarded` / `duplicate`; the reference behind it moves to `close_ref`. `blocked_by` is limited to 30 characters
+- `INDEX.md` columns are `| date | category | status | issue | blocked_by |`, ordered by status, then newest date, then slug, with an auto-generated notice at the top
+- The plugin no longer commits; the working session decides when to commit
+- Decision records DR-0001 / 0002 / 0003 / 0005 moved to `docs/decisions/archive/` as superseded by DR-0006
+
+### Removed
+- The sub-commands `write` / `list` / `read` / `update` / `migrate`, the plugin root `SKILL.md`, `templates/`, and the classic hooks (`PreToolUse` access guard, `SessionStart` count nudge) with their tests
+
 ## [0.2.12] - 2026-08-01
 
 ### Changed

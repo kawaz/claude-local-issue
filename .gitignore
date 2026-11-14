@@ -1,0 +1,5 @@
+# engine が mod を読み込む時に書き出す型定義 (Claude Code の版ごとに変わる)
+.claude-plugin/types/
+node_modules/
+# 各自の VS Code workspace ファイル (ローカルパス入りなので commit しない)
+*.local.*

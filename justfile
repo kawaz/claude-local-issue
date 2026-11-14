@@ -1,6 +1,8 @@
 # claude-local-issue justfile
 # canonical task runner は kawaz/bump-semver に準拠。
-# このリポは plugin (sub-commands + hooks) なので lint は JSON 妥当性 + bash 構文 + sub-command frontmatter。
+# このリポは plugin (Claude Mods の hooks module 1 つ) なので、lint は manifest と hooks module の検査
+# (claude plugin validate)、型検査、型の主張・any・非 null の主張の禁止 (oxlint)、JSON 妥当性。
+# 型検査と oxlint は devDependencies を使うので、先に `bun install` しておく。
 
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
@@ -14,6 +16,29 @@ default: list
 list:
     @just --list --unsorted
 
+# manifest と hooks module (hook する event / $ の呼び出し / env の読み書き) の検査
+[private]
+lint-plugin:
+    claude plugin validate .
+
+# hooks module とテストの型検査。型定義は engine が mod を読み込む時に
+# .claude-plugin/types/ へ書き出す (git 管理外)。hooks/ と tests/ は engine の型だけで、
+# test/ (bun test) はそれに bun の型を足して検査する
+[private]
+[script]
+lint-ts:
+    if [ ! -f .claude-plugin/types/claude-code/index.d.ts ]; then
+        echo "NG: .claude-plugin/types/ がありません。一度 'claude --plugin-dir .' を対話で起動するか、対話 session で '/plugin-types .' を打つと書き出されます" >&2
+        exit 1
+    fi
+    bun x tsc -p . && echo "ok: tsc (hooks, tests)"
+    bun x tsc -p test && echo "ok: tsc (test)"
+
+# `as` (as const を除く) / any / 非 null の主張 `!` を禁じる (.oxlintrc.json)
+[private]
+lint-oxlint:
+    bun x oxlint
+
 # JSON 妥当性 (plugin.json / marketplace.json / hooks.json)
 [private]
 lint-json:
@@ -21,38 +46,14 @@ lint-json:
       jq empty "$f" && echo "ok: $f"; \
     done
 
-# hook script の bash 構文チェック
-[private]
-lint-sh:
-    for f in hooks/*.sh; do bash -n "$f" && echo "ok: $f"; done
-
-# SKILL.md (plugin root) と commands/*.md に frontmatter (--- 開始) があるか
-[private]
-lint-skills:
-    for f in SKILL.md commands/*.md; do head -1 "$f" | grep -qx -- '---' && echo "ok: $f" || { echo "NG frontmatter: $f"; exit 1; }; done
-
 # 全 lint
-lint: lint-json lint-sh lint-skills
+lint: lint-json lint-plugin lint-ts lint-oxlint
 
-# hook の実機スモークテスト (= jq ベース hook の正値 + 負値 + bypass マトリクス、9+ ケース)
-# + sub-command の契約テスト (= close の VCS fixture + 指示書の静的 invariant)
+# test/: hooks/issue.ts の純粋な関数 (bun test)。
+# tests/: hooks/register.ts を engine の $ と代役の世界で駆動する (claude plugin test)
 test: lint
-    @bash hooks/test/run-matrix.sh
-    @bash commands/test/run-contracts.sh
-
-# docs/issue/INDEX.md が canonical 順序かを検査 (正本: templates/index.md)。
-# write / update の順序遵守が直るまで失敗するため `just test` には入れていない
-# (受け入れテスト: docs/issue/2026-07-06-index-sort-not-enforced-on-write-update.md)
-check-index-order:
-    @bash commands/test/check-index-order.sh
-
-# fork 入力契約の live probe (= 実 command を temp fixture に対して叩き、空振りを検出)。
-# 実 model 呼び出しを 15 条件 × reps 回するので課金 + 数分かかり、判定対象が確率的で
-# 本質的に flaky。commands/*.md を編集した時だけ手で回す想定で `just test` には入れていない。
-#   just probe-fork              # 15 run
-#   just probe-fork --reps 3     # 45 run (率を出したい時)
-probe-fork *args:
-    @bash commands/test/run-fork-probe.sh {{args}}
+    bun test ./test
+    claude plugin test .
 
 # CI entry (= 翻訳ペア freshness も含む)
 ci: lint test check-outdated-translations

@@ -1,6 +1,6 @@
 # DR-0003: commands 配置統一 + plugin root SKILL.md + migrate 新設 + frontmatter audience 区別
 
-- Status: Active
+- Status: Superseded by DR-0006
 - Date: 2026-06-19
 - Supersedes: DR-0001 の配置判断部 (= commands/skills 混在の判断)
 
@@ -8,7 +8,7 @@
 
 claude-local-issue v0.1.0 〜 v0.1.2 の dogfood で以下が判明:
 
-1. **commands/list, commands/read の本文ゼロ事象** (= [findings/2026-06-19-empty-command-body-issue.md](../findings/2026-06-19-empty-command-body-issue.md)): SKILL.md / commands ファイル本文が fork 先 subagent prompt の主たる standing instructions という仕様を見落とし、frontmatter のみで実装したため `/local-issue:list` が「ready to help」を返した
+1. **commands/list, commands/read の本文ゼロ事象** (= [findings/2026-06-19-empty-command-body-issue.md](../../findings/2026-06-19-empty-command-body-issue.md)): SKILL.md / commands ファイル本文が fork 先 subagent prompt の主たる standing instructions という仕様を見落とし、frontmatter のみで実装したため `/local-issue:list` が「ready to help」を返した
 2. **補完 namespace 衝突の実害は限定的**: 短縮形 (`/list` 等) を直打ちしても fuzzy match で自前 command が候補に出る、実害は補完ノイズだけ (= claude-plugin-reference §4 含意「短縮形狙うなら plugin 名 prefix で揃える」は skills 配置前提で偏っていた)
 3. **`description` と `argument-hint` の audience 区別**: description は AI 向け (= listing 常時 context、自動 invoke trigger)、argument-hint はユーザ向け (= 補完中のグレー hint)。混在させると context 圧迫 + 補完で読みにくい
 4. **dogfood で migration 必要事象が露呈**: cmux-msg 先行 migration や claude-plugin-reference リポでの frontmatter 欠落 issue 観察、bulk normalization する sub-command が欠落していた
@@ -83,5 +83,5 @@ claude-local-issue v0.1.0 〜 v0.1.2 の dogfood で以下が判明:
 
 - [DR-0001](./DR-0001-skill-over-hook-isolation.md): sub-command 隔離 (= 隔離原則は維持、配置判断のみ Superseded)
 - [DR-0002](./DR-0002-db-model-supersedes-delete-flow.md): archive + DB モデル, status/category enum 確定
-- [findings/2026-06-19-empty-command-body-issue.md](../findings/2026-06-19-empty-command-body-issue.md): dogfood 経緯
+- [findings/2026-06-19-empty-command-body-issue.md](../../findings/2026-06-19-empty-command-body-issue.md): dogfood 経緯
 - claude-plugin-reference 起票: `docs/issue/2026-06-19-user-invocable-skill-placement-and-description-audience.md` (= reference 本体への還元、当事者判断に委ねた)

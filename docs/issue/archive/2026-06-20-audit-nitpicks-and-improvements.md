@@ -1,20 +1,11 @@
 ---
 title: ペルソナ監査の軽微改善集約 (= nitpick / improvement)
-status: idea
+status: discarded
 category: task
 created: 2026-06-20T00:35:29+09:00
-last_read: 2026-08-01T22:26:39+09:00
-open_entered:
-wip_entered:
-blocked_entered:
-pending_entered:
-discarded_entered:
-resolved_entered:
-discard_reason:
-pending_reason:
-close_reason:
-blocked_by:
 origin: ペルソナ監査 3 名 (TechWriter/Security/QA) からの軽微改善集約
+close_reason: discarded
+close_ref: DR-0006
 ---
 
 # ペルソナ監査の軽微改善集約 (= nitpick / improvement)

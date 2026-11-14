@@ -1,20 +1,11 @@
 ---
 title: write の本文をファイルパスで受けられるようにしたい
-status: open
+status: resolved
 category: request
 created: 2026-10-21T01:28:40+09:00
-last_read:
-open_entered: 2026-10-21T01:28:40+09:00
-wip_entered:
-blocked_entered:
-pending_entered:
-discarded_entered:
-resolved_entered:
-discard_reason:
-pending_reason:
-close_reason:
-blocked_by:
 origin: llm-gateway
+close_reason: implemented
+close_ref: DR-0006
 ---
 
 # write の本文をファイルパスで受けられるようにしたい

@@ -2,66 +2,90 @@
 
 > [English](./DESIGN.md) | 日本語
 
+判断の記録は [DR-0006](./decisions/DR-0006-direct-edit-with-mod-normalization.md)。この文書は今の形を説明する。
+
+## 目的
+
+kawaz のリポ群で `docs/issue/` の INDEX と status 管理の型を揃える。issue ファイルの直接編集を禁じることは目的に含まない。
+
+増やしたくないもの:
+
+- LLM が実行する散文の手順書 (決定的にできる処理を model に実行させる経路)
+- issue の状態を持つ場所。状態は各ファイルの frontmatter だけが持ち、INDEX はそこから導く生成物
+- plugin が作る commit。いつ commit するかは作業しているセッションが決める
+- 常時 context に載る説明 (tool の description、skill の一覧)
+
 ## ドメイン
 
-本プラグインは claude-rules-personal の docs-knowledge-flow / docs-structure が定義する issue 運用の**発展形**。削除運用・5値 status を archive+DB モデル・7値へ発展させる(DR-0002)。プラグイン完成後に rules 側を本プラグイン前提へ改訂するまでが発展の完結(rules-revision-after-plugin issue)。
+issue は 1 件 1 ファイル (`docs/issue/YYYY-MM-DD-<slug>.md`)。運用は GitHub flow のような厳密な管理ではなく、自リポの TODO・他プロジェクトからの依頼・セッションを跨ぐメモを置く一段ゆるいもの。
 
-対象は kawaz リポ群の `docs/issue/`。GitHub flow のような厳密な issue 管理ではなく、docs-structure skill が定義する「一段ゆるい運用」(自リポ TODO + 他プロジェクトからの依頼受付 + セッション跨ぎメモ)を前提とする。
+- **status**: `idea` / `open` / `wip` / `blocked` / `resolved` / `discarded`。`blocked` は理由 (`blocked_by`) を、`resolved` / `discarded` は分類 (`close_reason`) と任意の根拠の参照 (`close_ref`) を伴う
+- **category**: `idea` / `bug` / `request` / `design` / `task` / `tech-memo`。書く側が決め、plugin は enum かどうかだけを見る
+- **created**: 起票日。放置の目安はこれだけで、status が変わった時刻は記録しない
+- **origin**: 依頼元のプロジェクト (他プロジェクトからの起票の時)
+- **本文**: frontmatter より後ろ。agent が自由に育て、plugin は 1 byte も変えない
 
-issue は **1 件 = 1 ファイル** (`docs/issue/YYYY-MM-DD-<slug>.md`)。状態は以下の軸を持つ:
-
-- **status** (遷移する): `idea` / `open` / `wip` / `blocked` / `pending-sublimation` / `discarded`(方針・環境が変わり棄却) / `resolved`。意思で変わるので update の引数で明示
-- **category** (分類): `idea` / `bug` / `request` / `design` / `task` / `tech-memo`。本文から導出できるので write/update 時に sub-command が判定
-- **時系列メタ** (sub-command が記録): `created` / `last_read` / 各 `*-entered`(open/wip/blocked/pending/discarded/resolved の各到達時刻) / `*-reason`(discard/pending の理由) / `blocked_by`。全て **full ISO8601 + TZ**(`date -Iseconds`)。**mtime は使わない**(vcs 操作で mtime はあてにならず、read で mtime は変わらないため「読んでいるのに放置扱い」になる)
-- **本文**
-
-### category enum の根拠
-
-kawaz の 7 リポの現存 + git 履歴から掘った約 68 件の issue を分類して確定した。`bug` / `request`(=feature) が実績最多、`design`(設計検討)が 12 件で当初候補から漏れていたため追加。`meta`(ルール/運用基盤の改善)は候補に挙がったが、宛先リポ(claude-rules-* 等)で既に分離されるため不採用。
+close した issue は `docs/issue/archive/` に同じ名前で置き、経緯の記録として残す。
 
 ## アーキテクチャ
 
-### なぜ sub-command か (フックではなく)
+### 構成
 
-issue の多段作業(起票・index 更新・commit)を sub-command に隔離することで、起票元コンテキストからその作業が消える。起票元は「リポ名・slug・本文を渡して 1 回呼ぶ」だけで、コンテキスト負荷は Write 1 回相当。フックで後追い矯正する案を採らない理由は DR-0001 の Alternatives Considered を参照。
+plugin は Claude Mods の hooks module 1 つだけを持つ (`hooks/register.ts`)。command・classic hook・skill・テンプレート・tool は持たない。agent は issue ファイルを Read / Write / Edit / Bash で直接扱い、mod は後から形を揃える。
 
-副次効果:
+- `hooks/issue.ts`: 判断の部分。frontmatter の正規化、INDEX の文面、一覧の差分、監視に足す引数と書く条件、知らせの文面。`$` に触れない純粋な関数なので、bun test で直接検査する (`test/`)
+- `hooks/register.ts`: `$` を通して読む・書く・知らせる部分。engine の `$` と、メモリ上のファイルシステムなどの代役で駆動して検査する (`tests/`、`claude plugin test`)
 
-- **低コスト**: 定型作業なので `model: haiku`。起票元が最上位 tier でも起票だけ安いモデルに落ちる
-- **規約の隔離**: index・命名・ja/en・commit 作法は全て sub-command 内。起票元は覚えなくてよい
-- **スコープの構造的固定**: sub-command の入力が 1 件なので、index 全体スキャンや他 issue 巻き込みが起きない
+frontmatter の読み取りは `欄: 値` の行を読む小さな parser で、YAML や schema のライブラリを使わない。hooks module が import できるのは相対パスのファイルと `claude-code` だけで、ライブラリを使うには bundle が要る一方、扱う形は 8 つの既知の欄を持つ平たい行の並びだけだから。読み方 (引用符、コメント、欄の名前の大文字、複数行の値、触れずに指摘するファイル) は README の「frontmatter」の節。
 
-### 配置と命名 (= DR-0003)
+### 検出
 
-全 sub-command (list / read / write / update / migrate) は **`commands/<name>.md` に一般語命名で統一**。Claude Code の `commands/` と `skills/` 配置は runtime 上同一機構で、本 plugin は `commands/` 統一を採用。namespace 衝突は補完 fuzzy match で吸収、実行時の解決は `/<plugin>:<name>` full namespace で明確。**agent は不採用**: agent は別 system prompt の独立判断ワーカーで、issue CRUD のような定型フロー適用には過剰。隔離と低コストモデルは frontmatter の `model + context: fork + agent: general-purpose`(§9.2 recipe)で足り、agent ファイルは不要。詳細は DR-0003 を参照。
+- 監視する場所は、セッションの作業ディレクトリの `docs/issue/` と、書き込みうる tool の引数 (Write / Edit の `file_path`、Bash のコマンド) に現れた別の場所の `docs/issue/`。Read では足さない。場所は実パスで持つ
+- 作業ディレクトリの `docs/issue/` は全体を揃える。`session.start` で全ファイルを一度正規化し、以後はそこでの変化 (手で書き換えた `INDEX.md` も含む) があれば通す
+- 別のリポの `docs/issue/` は、そのリポで起動したセッションの持ち場。名指された時は `next(e)` の前にその時点の状態を記録するだけで何も書かず、以後も tool の実行前ごとに記録し直す。tool の実行後は記録と違うファイル (変わった・消えた) だけを正規化・close し、その時だけ INDEX を作る。読んだだけ・名前が出ただけで何も変えていなければ 1 byte も書かない。呼び出しの前に無かった場所は空から始めるので、tool がそこに作ったものは変化として扱う
+- `tool.call` で `next(e)` の後、各場所の一覧 (名前・size・mtime) を取り直し、変わったものだけ読んで hash を比べる。中身が変わったファイルだけを正規化し、通す必要のある場所の INDEX を作り直す。main と subagent の tool の両方が対象
+- 修復は tool の結果を返す前に同期で終える。返した後に直すと、engine が「読んだ後に変更された」として Write の上書きを失敗させるため。同期で直すと engine が変化に気づき agent の既読状態を更新するので、続く Edit は失敗しない
+- 同時に走った tool の検査は 1 本ずつ順に行う。書き戻す直前と archive へ移す直前に読み直し、判定した時から変わっていたら新しい内容でやり直す
+- 1 つのファイルの読み書きに失敗しても、残りのファイルと INDEX の処理は続け、失敗したファイルは指摘する
 
-### context: fork の必要性
+### 知らせ方
 
-`model` 切替を `context: fork` なしで行うと、親 session の context が target model に持ち越され、window 超過で invocation 失敗(最悪メイン session が継続不能)になる実機事例がある(claude-plugin-reference skills.md §9.1)。fork で fresh context にすることで回避する。
+| 何を | どこへ | 理由 |
+|---|---|---|
+| 直したこと (欄の名前だけ、archive への移動先) と、場所ごとに 1 回の `INDEX.md を更新した` | 契機になった tool の結果の `context` | その tool の直後に agent が読む。直したことは agent の判断を要さないので 1 行で足りる。INDEX の行は、パスを絞って commit するセッションが INDEX を取りこぼさないため |
+| 指摘 (ファイル、何がおかしいか、何をすればよいか) | `$.session.append` で tool を実行した agent の会話 (subagent ならその `agentId`、届けられなければ main) | 指摘は agent に直させるもの。書いた agent に届けないと直されない |
+| 起動時のまとめ | 最初の prompt の `context` | 起動時の修復はどの tool にも結び付かない。最初の request に 1 回だけ載せる。上の hook が prompt を drop した時は次の prompt まで持ち越す |
 
-### commit はパス限定・push しない
+- ファイルは作業ディレクトリのものを `docs/issue/<ファイル名>`、他の場所を絶対パスで呼ぶ。ファイルから取った値や名前は引用符で括り 40 文字で切る (中身が agent への指示として読まれないように)
+- 同じファイルの同じ指摘は、そのファイルの内容 (hash) が変わるまで繰り返さない。どの会話にも届かなかった指摘と、起動時のまとめの列挙 (全体で 5 件まで) に載らなかった指摘は「伝えた」ことにせず、後でもう一度送る
 
-`bump-semver vcs commit -m ... <file> <INDEX.md>` を使う。指定パスの working-tree 内容だけを commit し、他の dirty な変更を巻き込まない・冪等(変更なしで no-op)。`-a/--all` は bump-semver 側が設計上拒否している。push は起票 sub-command の責務外(クロスプロジェクト起票では「相手リポにローカル記録が残る」までで十分、届ける判断は別レイヤ)。
+### close と archive
 
-## フック
+`status` が `resolved` か `discarded` で、指摘が 1 つも無いファイルを `archive/` へ移す。移す直前に読み直し、判定した時の内容と同じ時だけ移す。`$.fs` は書けるが改名・削除ができないので、移動は `$.process.run` で `mkdir -p` と `mv -n` を行い、移ったかはファイルシステムを読み直して確かめる。移せなかった時は分かる範囲の原因 (mv のエラー文など) を添えて指摘する。`archive/` に同じ名前があれば移さずに指摘する。
 
-- **PreToolUse** (matcher: `*`、`if` は使わない): 全 tool で発火し、スクリプトが stdin の JSON を jq で構造化 parse して `docs/issue/` 配下の issue なら対応 sub-command へ誘導。Read/Write/Edit/Bash(= cat/head/tail/grep/sed 等の read/write 系コマンド)の経路を検出。**非ブロック**(exit 0 + additionalContext)。
-  - **`if` を使わない理由**: `if` はパフォーマンス用の前段フィルタに過ぎず、相対 glob が project dir 基準で解決されるため**クロスプロジェクト起票(絶対パス/別リポ)を取りこぼす**。本筋のブロック/無視/誘導の分岐はパスからスクリプトで行う方が確実。発火は増えるが、無関係パスは即 exit 0 するので実害なし
-  - exit 2 でブロックしないのは、sub-command 本体も Read/Write/Edit を使うため。INDEX.md / README は sub-command が正当に触るのでスクリプトが除外
-- **SessionStart** (matcher `*`, `issue-count-nudge.sh`): 未解決 issue が閾値以上たまっていたら list を促す。該当なしなら無音。
-  - **件数のみで判定し、stale 判定はしない**。stale は mtime では測れず frontmatter TS の max で測るべきもので、その算出は list に一元化する。nudge は「見にいくきっかけ」を作るだけ
-  - **source で分岐**: `startup` / `clear` / `compact` のみ促す。`resume` は除外(コンテキストが生きたまま復帰し Ctrl-Z+fg 等で頻発するため)。matcher の alternation が source 値に効くかは未検証なので matcher は `*` でスクリプト側判定
+開き直す時は、`archive/` の中で `status` を書き換えてから `docs/issue/` へ戻す。close の status のまま戻すと、次の検査でまた `archive/` へ移る。
 
-放置・件数の閾値は env (`CLAUDE_LOCAL_ISSUE_STALE_DAYS` / `CLAUDE_LOCAL_ISSUE_COUNT_THRESHOLD`) で調整可。初期値は 14 日 / 5 件。
+### INDEX.md
 
-## close と archive
+active な全ファイルの frontmatter から毎回全体を生成し、文面が変わる時だけ書く。指摘が残っているファイルも載せ、不正な値はそのまま表示する (セルの中の改行は空白にする)。並びは status (`idea` → `open` → `wip` → `blocked`、続いて指摘で留まっている `resolved` / `discarded` とその他の値)、日付の新しい順、slug の順。
 
-close は「やろうとしたことが done / 棄却された」時に打つ。**DR 化しただけでも close 可**だが、close_reason(`string[]`)に `dr/*` があり `implemented` が無ければ、DR 1 つにつき後続 issue「DR-XXXX を実装完了する」(task, 同一リポ)を close (= update) sub-command が自動起票する。旧運用の「DR 化して安心して実装放置」を、close と後続起票の不可分連結で防ぐ。
+## 帰結
 
-close した issue は削除せず `docs/issue/archive/` へ物理移動する。直読みは hook でガードされ list はデフォルト archive を見ないので、メインコンテキストからは見えなくなる(=従来の削除と同じ効果)が、経緯(全 TS・reason)は DB として残る。archive は可視性の物理表現で、status とは直交。
+- issue 1 件の操作にかかる追加の費用は、一覧の取り直しと変わったファイルの読み直し (数十 ms) と、直した時の 1 行
+- plugin の無いセッションや他の道具が書いた分は、次にそのリポで plugin のあるセッションが起動するまで揃わない。揃えた差分は、そのセッションの作業コピーに未 commit で現れる
+- 起動時に揃える対象は、そのリポの active な全ファイル。別の形式の frontmatter で書かれてきたリポでは、最初の起動で全ファイルと INDEX が書き換わる。表に無い欄は値があっても消える (値は VCS の差分に残る)
+- close するとファイルのパスが変わる
+- status が変わった時刻は記録しない。放置の目安は起票日だけ
+- push の前に呼べる検査 (Claude の外で動く CLI) は持たない
 
-## 未確定 (運用しながら詰める)
+## 限界
 
-- 放置 → unread 戻しの厳密な日数
-- SessionStart 促しの件数閾値
-- リポ名 → ローカルパス解決の規約パス(`~/.local/share/repos/...`)の確定
+- **同時の書き込み**: mod が読み直してから書くまでの間に別の書き手が同じファイルを書くと、その分を上書きする。mod の API に排他も原子的な置き換えも無いため
+- **Bash のコマンドからの場所の読み取り**: コマンドの文字列に現れた `docs/issue/` を、セッションの作業ディレクトリを基準に読むだけ。`cd` の先、変数、空白入りのパスは追わない。取りこぼした他リポへの書き込みは、そのリポで次に起動したセッションが揃える。Write / Edit の絶対パスは確実に拾う
+- **size も mtime も変わらない書き換え**: 検出しない
+- **並んで走る tool**: 検査は先に終わった tool の後で走るので、直したことと指摘が、書いた agent でなくその tool の agent に届くことがある
+- **`/clear` と compact の後**: 伝えた指摘は、ファイルが変わるまで出直さない。`/clear` とセッション内の `/resume` では `session.start` が起きないので、起動時のまとめも出直さず、監視している場所もそのまま続く
+
+## しきい値
+
+起動時の件数の知らせのしきい値は既定 5 で、環境変数 `CLAUDE_LOCAL_ISSUE_COUNT_THRESHOLD` で変えられる。既定値を運用から見直す時のために DR-0004 を予約している。

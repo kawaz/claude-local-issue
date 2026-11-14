@@ -1,52 +1,44 @@
 # STRUCTURE
 
 ```
-README{,-ja}.md            最初の窓口(英訳必須)
+README{,-ja}.md            最初の窓口 (英訳必須)
 LICENSE                    MIT
-SKILL.md                   plugin root SKILL.md。/local-issue:local-issue で打てる AI 向け全体ガイド (判断軸 + 設計指針の正本)
+CHANGELOG.md               版ごとの変更
+justfile                   task runner (canonical: kawaz/bump-semver に準拠)
+package.json               検査用の devDependencies (TypeScript / oxlint / bun の型)。配布物には関係しない
+bun.lock                   package.json の依存の版の固定
+tsconfig.json              hooks/ と tests/ の型検査 (engine の型定義だけを読む)
+.oxlintrc.json             `as` (as const を除く) / any / 非 null の主張を禁じる lint
+.gitignore                 .claude-plugin/types/、node_modules/ 等を git 管理外にする
 .claude-plugin/
-  plugin.json              plugin 宣言 (name: local-issue。リポ名 claude-local-issue から claude- を落とす=gh-monitor 慣習)
+  plugin.json              plugin 宣言 (name: local-issue。リポ名 claude-local-issue から claude- を落とす)。engines に動作を確かめた Claude Code の版の範囲
   marketplace.json         marketplace 宣言
-commands/                  ユーザ invocable な sub-command を全てここに置く (= DR-0003 で commands 統一)
-  list.md                  /local-issue:list      一覧 (haiku, fork)
-  read.md                  /local-issue:read      1 件読み + last_read 記録 + 方針 TODO 化 (haiku, fork)
-  write.md                 /local-issue:write     起票 (sonnet, fork)、category 判定・INDEX 反映・vcs commit
-  update.md                /local-issue:update    更新 / close (sonnet, fork)、close 時 archive 移動 + 後続 DR 起票
-  migrate.md               /local-issue:migrate   bulk migration (sonnet, fork)、frontmatter 欠落補完・INDEX 再生成
-templates/                 supporting file (plugin 直下、`${CLAUDE_PLUGIN_ROOT}/templates/` 参照)
-  issue.md                 issue 雛形 (write/migrate が起票時に Read)
-  index.md                 INDEX 雛形 (migrate が再生成時に Read)
+  types/                   engine が書き出す hooks module の型定義 (git 管理外)
 hooks/
-  hooks.json               PreToolUse 誘導(matcher *) + SessionStart 促し(matcher *)
-  issue-access-guard.sh    Read/Write/Edit/Bash で docs/issue/ 直アクセス検知 → command 誘導(非ブロック・パス判定)
-  issue-count-nudge.sh     未解決件数が閾値超 → list 促し(resume 除外、archive 非カウント)
+  hooks.json               hooks module を名指す ({ "modules": ["./register.ts"] })
+  register.ts              $ を通す部分: session.start / tool.call / prompt.submit の hook、他リポの実行前の記録、読み書き、archive への移動、知らせ
+  issue.ts                 判断の部分 (純粋な関数): frontmatter の正規化、INDEX の文面、一覧の差分、監視に足す引数と書く条件、知らせの文面
+test/
+  issue.spec.ts            hooks/issue.ts の単体テスト (bun test)
+  tsconfig.json            test/ の型検査 (engine の型に bun の型を足す)
+tests/
+  register.test.ts         hooks/register.ts を engine の $ と代役の世界 (メモリ上のファイルシステム等) で駆動するテスト (claude plugin test)
 docs/
-  DESIGN{,-ja}.md          ドメイン + アーキテクチャ
+  DESIGN{,-ja}.md          目的・ドメイン・アーキテクチャ・帰結・限界
   STRUCTURE.md             この file
+  QUESTIONS.md             裁定待ちの問い
   decisions/
-    DR-0001-skill-over-hook-isolation.md         (= Superseded by DR-0003 でも本体は保存)
-    DR-0002-db-model-supersedes-delete-flow.md
-    DR-0003-commands-unification-and-migrate.md
-    INDEX.md
+    DR-NNNN-<slug>.md      現役の設計判断
+    INDEX.md               現役の DR の一覧と、archive/INDEX.md への 1 行のリンク
+    archive/               置き換えられた DR と、その一覧 (INDEX.md)
   findings/
-    YYYY-MM-DD-<slug>.md   検証結果 / 観察記録
+    YYYY-MM-DD-<slug>.md   検証結果・観察記録
+  journal/
+    YYYY-MM-DD-<slug>.md   作業の記録
   issue/
     YYYY-MM-DD-<slug>.md   active な issue
-    archive/               close 済み(resolved/discarded)。経緯 DB。list はデフォルト見ない
-    INDEX.md               active issue の正本
-justfile                   task runner(canonical: kawaz/bump-semver に準拠)
+    archive/               close した issue
+    INDEX.md               active な issue の一覧 (plugin が生成する)
 ```
 
-## 配置判断 (= DR-0003)
-
-- **Claude Code の `commands/` と `skills/` 配置は runtime 上同一機構**。配置 layout は慣習であり、機能差はない (claude-plugin-reference §1)。本 plugin は全 sub-command を `commands/` 統一
-- **ユーザ invocable な sub-command は全部 `commands/<name>.md` に一般語 (= 短縮形) で置く**
-  - namespace 衝突は補完 fuzzy match で吸収、実行時は `/<plugin>:<name>` で明確
-  - 短縮形 (`/list` `/write`) を直打ちしても自前 command が候補に出る
-- **supporting file は plugin 直下 `templates/`** に集約、`${CLAUDE_PLUGIN_ROOT}/templates/<name>.md` で参照
-- **plugin root `SKILL.md`** で全体ガイド (= AI への入口)。各 sub-command の description を 1 行に圧縮できる
-- **agent は不採用**: issue CRUD は定型フローで独立ペルソナ不要、隔離と低コストモデルは command frontmatter (= `model + context: fork + agent: general-purpose`) で達成
-
-## frontmatter audience の区別
-
-正本は plugin root [`SKILL.md`](../SKILL.md) の §「frontmatter audience の区別」、または [DR-0003](./decisions/DR-0003-commands-unification-and-migrate.md) (e)。本 file からの重複は避けるためここでは link のみ残す (= race 防止)。
+テストの置き場を 2 つに分けている理由: `claude plugin test` は plugin の `*.test.ts` を engine の環境で読み込み、そこでは `bun:test` を import できない。`claude plugin validate` も `tests/` を engine の型だけで検査する。bun test で回す純粋な関数のテストは `test/*.spec.ts` に置き、どちらにも読まれないようにしている。

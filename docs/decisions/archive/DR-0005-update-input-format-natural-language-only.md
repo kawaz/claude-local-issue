@@ -1,6 +1,6 @@
 # DR-0005: update スキル入力形式は自然文一本を維持する (9cell-trial への回答)
 
-- Status: Active
+- Status: Superseded by DR-0006
 - Date: 2026-06-20
 
 ## Context

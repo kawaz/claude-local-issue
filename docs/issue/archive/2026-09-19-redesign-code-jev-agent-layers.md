@@ -1,20 +1,11 @@
 ---
 title: local-issue を「コード / Jev / agent」の 3 層に再設計する
-status: idea
+status: resolved
 category: design
 created: 2026-09-19T08:57:04+09:00
-last_read:
-open_entered:
-wip_entered:
-blocked_entered:
-pending_entered:
-discarded_entered:
-resolved_entered:
-discard_reason:
-pending_reason:
-close_reason:
-blocked_by:
 origin: sandbox-jev
+close_reason: implemented
+close_ref: DR-0006
 ---
 
 # local-issue を「コード / Jev / agent」の 3 層に再設計する
