@@ -43,7 +43,7 @@ and the agent is told, as lines on that tool's result:
 
 ```
 local-issue: docs/issue/2026-11-14-login-fails.md: frontmatter を足した、title を補った、status を補った、created を補った
-local-issue: docs/issue: INDEX.md を更新した
+local-issue: docs/issue: INDEX.md を更新した (issue の変更と同じ commit に入れる)
 ```
 
 What the plugin cannot decide by itself (here, `category`) is pointed out to the agent whose tool wrote the file, with what to do, and the agent fixes it.
@@ -60,7 +60,7 @@ What the plugin cannot decide by itself (here, `category`) is pointed out to the
 
 ## Frontmatter
 
-The fields, in this order. Any other field is removed, and an optional field with an empty value is not written.
+The fields, in this order. A field outside the table is removed when its value is empty or only a date-time; a field outside the table that holds any other value is kept as written (after the table's fields) and pointed out, so that a written reason is not lost: move the value into the body, then remove the field. An optional field with an empty value is not written.
 
 | Field | Required | Value | When missing or invalid |
 |---|---|---|---|
@@ -69,15 +69,17 @@ The fields, in this order. Any other field is removed, and an optional field wit
 | `category` | yes | `idea` / `bug` / `request` / `design` / `task` / `tech-memo` | pointed out (no default); case and surrounding spaces are fixed |
 | `created` | yes | ISO 8601 date or date-time, on the calendar | filled from the date in the file name |
 | `origin` | no | the project that asked for it | kept as written |
-| `blocked_by` | while `status: blocked` | up to 30 characters; a ruling awaited in `docs/QUESTIONS.md` starts with its label | pointed out when missing or longer; removed under any other status |
+| `blocked_by` | while `status: blocked` | a reason of up to about 30 Japanese characters (a ruling awaited in `docs/QUESTIONS.md` starts with its label), or the slug of the issue it waits for | pointed out when missing or longer; removed under any other status |
 | `close_reason` | while `resolved` / `discarded` | `implemented` / `documented` / `discarded` / `duplicate` | pointed out when missing or invalid; removed under any other status |
-| `close_ref` | no | up to 30 characters: the reference behind the close (a DR number, a version, a finding's slug) | pointed out when longer; removed under a non-closing status |
+| `close_ref` | no | up to about 30 Japanese characters: the reference behind the close (a DR number, a version, a finding's slug) | pointed out when longer; removed under a non-closing status |
 
 How the frontmatter is read:
 
 - One `field: value` per line. Quotes around a value are removed, and outside quotes ` #` starts a comment (`status: open # memo` is `open`). Comment-only lines and blank lines are dropped when the frontmatter is written back
 - Field names are read in lower case (`Title:` is written back as `title:`); when two lines become the same field, the first one is kept. `field:value` without a space counts only for the eight field names above, so a line such as a URL is not taken for a field
 - A value that spans several lines is kept whole and pointed out, whatever the field
+- The limit of `blocked_by` and `close_ref` is about 30 Japanese characters: an ASCII character (code point below 0x80) counts 0.5 and any other 1, and a total over 30 is pointed out. An ASCII-only slug fits up to 60 characters
+- A `blocked_by` / `close_ref` written as a one-element list (`[value]`, no comma inside) is written back as the value; a list of two or more is kept as one value
 - While `status` is invalid, `blocked_by` / `close_reason` / `close_ref` are kept, so that no reason is lost on the way to fixing the status
 - A leading BOM is kept, and the frontmatter is read after it
 
@@ -87,28 +89,36 @@ Every value the plugin fills in comes from the file itself (its name, its headin
 
 ## Closing and reopening an issue
 
-Set `status` to `resolved` or `discarded` and give a `close_reason`. Once nothing is pointed out for the file, the plugin moves it to `docs/issue/archive/` and tells the agent the new path. The file is read again right before the move and moved only if it is still what was judged. While something is pointed out the file stays where it is, and when `archive/` already has a file of the same name the move is not made and that is pointed out.
+Set `status` to `resolved` or `discarded` and give a `close_reason`. Once nothing is pointed out for the file, the plugin moves it to `docs/issue/archive/` and tells the agent the new path. archive/ is one directory deeper, so when the body has relative links (`](../`), the line also says how many there are and that each needs `../../` instead of `../` (the body is not rewritten). The file is read again right before the move and moved only if it is still what was judged. While something is pointed out the file stays where it is, and when `archive/` already has a file of the same name the move is not made and that is pointed out.
 
 To reopen a closed issue, change its `status` inside `archive/` first, then move it back to `docs/issue/`. Moved back with a closing status, it would go straight to `archive/` again at the next check.
 
 ## INDEX.md
 
-Regenerated from all active issues whenever something in `docs/issue/` changes, and written only when its text changes. Columns: `| date | category | status | issue | blocked_by |`, where `date` is the date in the file name and `issue` links the title. Rows are ordered by status (`idea` → `open` → `wip` → `blocked`, then files kept active by something pointed out), then newest date first, then slug.
+Regenerated from all active issues whenever something in `docs/issue/` changes, and written only when its text changes. Columns: `| date | category | status | issue | title | blocked_by |`, where `date` is the date in the file name, `issue` links the slug (the name other issues, DRs and commits use; a file whose name has no slug shows its file name), and `title` is the whole title (line breaks become spaces). Rows are ordered by status (`idea` → `open` → `wip` → `blocked`, then files kept active by something pointed out), then newest date first, then slug.
 
 ## What the agent is told
 
 Files are named `docs/issue/<file>` in the working directory and by absolute path elsewhere. Values and names taken from a file are quoted and cut at 40 characters, so a file's content is not read as an instruction.
 
-- **Fixes**: one line per file on the result of the tool call that triggered them, naming only the fields (`local-issue: docs/issue/<file>: status を直した、foo を消した`), or the new path after a move to `archive/`. When `INDEX.md` was rewritten, `INDEX.md を更新した` is added once per place, so a session that commits by path does not leave it out
+- **Fixes**: one line per file on the result of the tool call that triggered them, naming only the fields (`local-issue: docs/issue/<file>: status を直した、foo を消した`), or the new path after a move to `archive/`. When `INDEX.md` was rewritten, `INDEX.md を更新した (issue の変更と同じ commit に入れる)` is added once per place, so a session that commits by path does not leave it out
 - **Points to fix**: appended to the conversation of the agent that ran the tool (a subagent gets its own; when it cannot be reached, the main session gets it), one line per file with what is wrong and what to do. The same point for the same file is not repeated until the file changes; a point that reached no conversation is sent again at the next check
 - **At startup**: see below
 - A file that cannot be read or written is pointed out, and the other files and `INDEX.md` are still processed
+
+## Committing
+
+The plugin never commits. When you commit:
+
+- Commit after the tool call that rewrites issues has returned. The plugin brings `docs/issue/` into shape once that call returns; rewriting an issue and committing inside the same Bash call leaves `INDEX.md` (and any fixed frontmatter) changed after the commit, as an uncommitted diff
+- When you commit by path, include the files named in the plugin's lines, `INDEX.md` too when `INDEX.md を更新した` was said
+- What the startup pass fixed is uncommitted; commit it apart from your other changes
 
 ## At startup
 
 When a session starts in a repository with `docs/issue/`, the plugin normalizes every active issue there once and adds one summary to the first prompt: what it fixed, what is left to fix, whether `INDEX.md` was rewritten, and, when the number of active issues reaches the threshold, that number and the three oldest. At most 5 files are named in all (points to fix first); the rest are counted, and points not named are told again later.
 
-This catches up on files written by sessions without the plugin or by other tools. In a repository whose issues were written in another frontmatter format, the first startup rewrites every active file and `INDEX.md`; fields outside the table above are removed even when they have a value (the values stay in the VCS diff). The changes are left uncommitted in the working copy.
+This catches up on files written by sessions without the plugin or by other tools. In a repository whose issues were written in another frontmatter format, the first startup rewrites every active file and `INDEX.md`; fields outside the table above are removed when empty or only a date-time, and kept and pointed out when they hold another value. The changes are left uncommitted in the working copy.
 
 ## Other repositories
 

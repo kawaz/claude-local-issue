@@ -16,6 +16,7 @@ import {
   indexLine,
   isIssueFile,
   issueDirsIn,
+  movedPhrase,
   needsPass,
   normalizeIssue,
   oldest,
@@ -254,9 +255,10 @@ describe('normalizeIssue: category and created', () => {
 })
 
 describe('normalizeIssue: field names and lines', () => {
-  // Only the eight fields of DR-0006 §3 stay, in that order. Other fields are
-  // removed even with a value, and an optional field with no value is not written.
-  test('fields outside the eight are removed', () => {
+  // The eight fields of DR-0006 §3 come first, in that order. A field outside
+  // them whose value is empty or only a date-time carries nothing to lose and
+  // is removed; an optional field with no value is not written.
+  test('fields outside the eight with no value or only a date are removed', () => {
     const text =
       fm('title: 題', 'status: idea', 'category: task', 'created: 2026-06-20T00:35:29+09:00', 'foo: 2026-08-01', 'bar_entered:', 'close_reason:', 'blocked_by:', 'origin: elsewhere') +
       '\n# 題\n\n本文\n'
@@ -324,7 +326,27 @@ describe('normalizeIssue: field names and lines', () => {
 
   // An unknown field is removed under the name it was written with.
   test('an unknown field is named as written', () => {
-    expect(normalizeIssue(NAME, fm(...HEAD, 'Some_Field: x')).fixes).toEqual(['Some_Field を消した'])
+    expect(normalizeIssue(NAME, fm(...HEAD, 'Some_Field: 2026-11-14T10:00:00+09:00')).fixes).toEqual(['Some_Field を消した'])
+  })
+
+  // A field outside the table that holds a value (a reason, a note) is not
+  // dropped: the value may be the ground of a decision, and dropping it
+  // silently loses it. It stays as written (name and value, block lines too)
+  // after the table's fields, in the order written, and is pointed out until
+  // the agent moves the value to the body. The value is not quoted in the
+  // point (it may be a long sentence). While pointed out, the file is not
+  // closed, so it is not moved to archive/.
+  test('a field outside the table with a value is kept and pointed out', () => {
+    const text = fm('Pending_Reason: 上流の版が出るまで待つ', 'title: t', 'status: resolved', 'notes:', '  - a', 'category: bug', 'created: 2026-11-14', 'close_reason: implemented') + 'b\n'
+    const r = normalizeIssue(NAME, text)
+    expect(r.text).toBe(
+      fm('title: t', 'status: resolved', 'category: bug', 'created: 2026-11-14', 'close_reason: implemented', 'Pending_Reason: 上流の版が出るまで待つ', 'notes:', '  - a') + 'b\n',
+    )
+    expect(r.problems).toEqual(['Pending_Reason は使わない欄だが値がある。値を本文へ移してから欄を消す', 'notes は使わない欄だが値がある。値を本文へ移してから欄を消す'])
+    expect(r.problems.join('')).not.toContain('上流の版')
+    expect(r.isClosed).toBe(false)
+    const again = normalizeIssue(NAME, r.text)
+    expect(again.text).toBe(r.text)
   })
 
   // A value over several lines is kept whole and pointed out, whatever the
@@ -359,13 +381,40 @@ describe('normalizeIssue: field names and lines', () => {
 describe('normalizeIssue: blocked', () => {
   const head = ['title: t', 'status: blocked', 'category: task', 'created: 2026-11-14']
 
-  // blocked needs a reason of up to 30 characters (counted as characters, so
-  // Japanese counts one per character). 30 passes, 31 is pointed out.
-  test('blocked_by is required and limited to 30 characters', () => {
+  // blocked needs a reason, and the limit is about 30 Japanese characters:
+  // a character below 0x80 (ASCII) counts 0.5, any other 1, and a total over
+  // 30 is pointed out. So 30 Japanese pass and 31 do not; 60 ASCII pass and
+  // 61 do not; mixed values are summed (30 and 30.5 are the edge).
+  test('blocked_by is required and limited to 30, ASCII counting half', () => {
     expectProblems(normalizeIssue(NAME, fm(...head)), 'status: blocked には blocked_by が要る。frontmatter に blocked_by: を足し')
-    expect(normalizeIssue(NAME, fm(...head, `blocked_by: ${'あ'.repeat(30)}`)).problems).toEqual([])
-    expect(normalizeIssue(NAME, fm(...head, `blocked_by: ${'あ'.repeat(31)}`)).problems).toEqual(['blocked_by が 30 文字を超えている (31 文字)。30 文字以内に縮める'])
+    const passes = (v: string): void => expect(normalizeIssue(NAME, fm(...head, `blocked_by: ${v}`)).problems).toEqual([])
+    const fails = (v: string, now: string): void =>
+      expect(normalizeIssue(NAME, fm(...head, `blocked_by: ${v}`)).problems).toEqual([
+        `blocked_by が長い (日本語 30 文字相当まで。ASCII は 0.5 文字と数えて今 ${now})。縮める`,
+      ])
+    passes('あ'.repeat(30))
+    fails('あ'.repeat(31), '31')
+    passes('a'.repeat(60))
+    fails('a'.repeat(61), '30.5')
+    passes(`${'あ'.repeat(20)}${'a'.repeat(20)}`)
+    fails(`${'あ'.repeat(20)}${'a'.repeat(21)}`, '30.5')
     expect(normalizeIssue(NAME, fm(...head, 'blocked_by: Q3 待ち')).entry.blockedBy).toBe('Q3 待ち')
+  })
+
+  // `[x]` is a one-element list, written where one value was meant: the
+  // brackets go (named as fixed) and the element is what is checked. A list of
+  // two or more stays as written and is checked as one value.
+  test('a one-element list is unwrapped; a longer list is a value', () => {
+    const one = normalizeIssue(NAME, fm(...head, 'blocked_by: [some-long-slug-over-thirty-characters-long]') + 'b\n')
+    expect(one.text).toBe(fm(...head, 'blocked_by: some-long-slug-over-thirty-characters-long') + 'b\n')
+    expect(one.fixes).toEqual(['blocked_by を直した'])
+    expect(one.problems).toEqual([])
+    expect(one.entry.blockedBy).toBe('some-long-slug-over-thirty-characters-long')
+    expect(normalizeIssue(NAME, fm(...head, 'blocked_by: ["Q1 裁定待ち"]')).text).toContain('\nblocked_by: Q1 裁定待ち\n')
+    const twoValues = '[Q1 の裁定と Q2 の裁定の両方を待っている, 別リポの issue の完了も待っている]'
+    const two = normalizeIssue(NAME, fm(...head, `blocked_by: ${twoValues}`))
+    expect(two.text).toContain(`\nblocked_by: ${twoValues}\n`)
+    expectProblems(two, 'blocked_by が長い')
   })
 
   // Under any other valid status blocked_by means nothing and is removed. Under
@@ -403,14 +452,28 @@ describe('normalizeIssue: close', () => {
     const odd = normalizeIssue(NAME, fm(...head('resolved'), 'close_reason: Implemented'))
     expect(odd.isClosed).toBe(false)
     expectProblems(odd, 'close_reason の値 "Implemented" は使えない')
+    // A reason written into close_reason is pointed to where it belongs.
+    expect(odd.problems[0]).toContain('(理由や参照先は close_ref か本文に書く)')
   })
 
-  // close_ref is optional, up to 30 characters; over that it is pointed out
+  // close_ref is optional, up to about 30 Japanese characters; over that it is pointed out
   // and blocks the move like any other problem.
   test('close_ref over 30 characters is pointed out', () => {
-    const r = normalizeIssue(NAME, fm(...head('resolved'), 'close_reason: documented', `close_ref: ${'x'.repeat(31)}`))
-    expectProblems(r, 'close_ref が 30 文字を超えている')
+    const r = normalizeIssue(NAME, fm(...head('resolved'), 'close_reason: documented', `close_ref: ${'理'.repeat(31)}`))
+    expectProblems(r, 'close_ref が長い (日本語 30 文字相当まで。ASCII は 0.5 文字と数えて今 31)')
     expect(r.isClosed).toBe(false)
+  })
+
+  // close_ref follows the same rules as blocked_by: ASCII counts half (a
+  // 57-character path is 28.5 and passes, 61 ASCII characters are 30.5 and do
+  // not), and a one-element list is unwrapped.
+  test('close_ref: ASCII counts half, one-element lists unwrapped', () => {
+    expect(normalizeIssue(NAME, fm(...head('resolved'), 'close_reason: documented', `close_ref: docs/findings/${'x'.repeat(40)}.md`)).isClosed).toBe(true)
+    expectProblems(normalizeIssue(NAME, fm(...head('resolved'), 'close_reason: documented', `close_ref: ${'x'.repeat(61)}`)), 'close_ref が長い')
+    const r = normalizeIssue(NAME, fm(...head('resolved'), 'close_reason: implemented', 'close_ref: [v1.0.2]'))
+    expect(r.text).toContain('\nclose_ref: v1.0.2\n')
+    expect(r.fixes).toEqual(['close_ref を直した'])
+    expect(r.isClosed).toBe(true)
   })
 
   // close_reason and close_ref belong to closing statuses only.
@@ -475,7 +538,7 @@ describe('renderIndex', () => {
   // DR-0006 §5.
   test('notice line, header, then rows', () => {
     expect(renderIndex([entry('2026-11-14-a.md', 'open', 'A', 'bug')])).toBe(
-      [INDEX_NOTICE, '', '| date | category | status | issue | blocked_by |', '|---|---|---|---|---|', '| 2026-11-14 | bug | open | [A](./2026-11-14-a.md) |  |', ''].join('\n'),
+      [INDEX_NOTICE, '', '| date | category | status | issue | title | blocked_by |', '|---|---|---|---|---|---|', '| 2026-11-14 | bug | open | [a](./2026-11-14-a.md) | A |  |', ''].join('\n'),
     )
   })
 
@@ -503,14 +566,15 @@ describe('renderIndex', () => {
   // The title is the only description a row has, so INDEX.md shows it whole however long it is.
   test('a long title is shown whole', () => {
     const long = 'あ'.repeat(200)
-    expect(renderIndex([entry(NAME, 'open', long)])).toContain(`[${long}](`)
+    expect(renderIndex([entry(NAME, 'open', long)])).toContain(`| ${long} |`)
   })
 
   // A `|` in a value would split the table cell; `[`/`]` would break the link;
   // a line break inside a value would end the table row.
   test('table and link characters and line breaks are made safe', () => {
-    expect(renderIndex([entry(NAME, 'blocked', 'a | [b]', 'bug', 'Q1|Q2')])).toContain('[a \\| \\[b\\]](./2026-11-14-sample.md) | Q1\\|Q2 |')
-    expect(renderIndex([entry(NAME, 'odd\nvalue', 'two\r\nlines')])).toContain('| odd value | [two lines](./')
+    expect(renderIndex([entry(NAME, 'blocked', 'a | [b]', 'bug', 'Q1|Q2')])).toContain('[sample](./2026-11-14-sample.md) | a \\| [b] | Q1\\|Q2 |')
+    expect(renderIndex([entry('a [b].md', 'open', 'x')])).toContain('[a \\[b\\].md](./a%20%5Bb%5D.md)')
+    expect(renderIndex([entry(NAME, 'odd\nvalue', 'two\r\nlines')])).toContain('| odd value | [sample](./2026-11-14-sample.md) | two lines |')
   })
 
   // `#` and `?` in a file name would turn the rest of the link into a
@@ -520,8 +584,14 @@ describe('renderIndex', () => {
   })
 
   // A file without a title is still listed, by its file name.
-  test('no title: the file name stands in', () => {
-    expect(renderIndex([entry(NAME, 'open', '')])).toContain(`[${NAME}](./${NAME})`)
+  test('no title: the title cell is empty', () => {
+    expect(renderIndex([entry(NAME, 'open', '')])).toContain(`| [sample](./${NAME}) |  |`)
+  })
+
+  // The issue column links the slug; a file whose name is not of the issue
+  // form has no slug, and its file name is the link text.
+  test('a name without a slug is linked by the file name', () => {
+    expect(renderIndex([entry('notes.md', 'open', 'N')])).toContain('| [notes.md](./notes.md) | N |')
   })
 
   // No active issue: the table is there with no rows.
@@ -630,6 +700,18 @@ describe('issueDirsIn', () => {
   })
 })
 
+describe('moving to archive', () => {
+  // archive/ is one directory deeper, so each relative link of the body that
+  // climbs out (`](../`) needs one more `../`. The plugin does not change the
+  // body; it counts those links and says what to do. None: nothing is added.
+  // A `../` inside the frontmatter is not body and is not counted.
+  test('relative links in the body are counted on the move line', () => {
+    const text = fm('title: t', 'origin: ../x') + 'see [DR](../decisions/DR-0006.md) and [f](../findings/a.md), not [x](./y.md) or [h](https://e.x/../z)\n'
+    expect(movedPhrase('docs/issue/archive/a.md', text)).toBe('docs/issue/archive/a.md へ移した。本文の相対リンク 2 個は 1 段深くなったので ../ を ../../ に直す')
+    expect(movedPhrase('docs/issue/archive/a.md', fm('title: t') + 'no links\n')).toBe('docs/issue/archive/a.md へ移した')
+  })
+})
+
 describe('telling', () => {
   // Files are named `docs/issue/<name>` in the working directory and by
   // absolute path elsewhere; a name that is not of the issue form is the
@@ -647,7 +729,7 @@ describe('telling', () => {
   // commits by path does not miss it.
   test('fix, INDEX and problem lines', () => {
     expect(fixLine('docs/issue/2026-11-14-foo.md', ['status を直した', 'foo を消した'])).toBe('local-issue: docs/issue/2026-11-14-foo.md: status を直した、foo を消した')
-    expect(indexLine('docs/issue')).toBe('local-issue: docs/issue: INDEX.md を更新した')
+    expect(indexLine('docs/issue')).toBe('local-issue: docs/issue: INDEX.md を更新した (issue の変更と同じ commit に入れる)')
     expect(problemLine('x', ['category が無い', 'title が無い'])).toBe('local-issue: x: category が無い。title が無い')
   })
 
@@ -666,7 +748,9 @@ describe('telling', () => {
     expect(oldest(list, 2).map((e) => e.name)).toEqual(['2026-01-01-a.md', '2026-01-01-b.md'])
   })
 
-  // Startup: at most 5 files are named in all, problems first (they ask for
+  // Startup: when something was fixed, the first line says what to do with
+  // it (it is uncommitted; commit it apart from other changes).
+  // At most 5 files are named in all, problems first (they ask for
   // work); the rest are counted. Only the problems named count as told, so the
   // others are said again at their next change or check. The count line
   // appears from the threshold up (at the threshold included).
@@ -676,19 +760,23 @@ describe('telling', () => {
     const actives = Array.from({ length: 5 }, (_, i) => entry(`2026-01-0${i + 1}-a${i}.md`, 'open'))
     const r = startupNotice({ fixed, problems, isIndexUpdated: true, active: actives, threshold: 5 })
     expect((r.text ?? '').split('\n')).toEqual([
-      'local-issue: 起動時に docs/issue を検査した。直した 4 件、直してほしい所がある 3 件 (直した分は作業コピーに未 commit の差分として残る)。',
+      'local-issue: 起動時に docs/issue を検査した。直した 4 件、直してほしい所がある 3 件。直した分は未 commit なので、他の変更と分けて commit する。',
       '- docs/issue/p0.md: 直してほしい: category が無い',
       '- docs/issue/p1.md: 直してほしい: category が無い',
       '- docs/issue/p2.md: 直してほしい: category が無い',
       '- docs/issue/f0.md: 直した: status を直した',
       '- docs/issue/f1.md: 直した: status を直した',
       '- ほか 2 件',
-      'local-issue: docs/issue: INDEX.md を更新した',
+      'local-issue: docs/issue: INDEX.md を更新した (issue の変更と同じ commit に入れる)',
       'local-issue: active な issue が 5 件ある。古い順: docs/issue/2026-01-01-a0.md (open)、docs/issue/2026-01-02-a1.md (open)、docs/issue/2026-01-03-a2.md (open)',
     ])
     expect(r.told).toEqual(['docs/issue/p0.md', 'docs/issue/p1.md', 'docs/issue/p2.md'])
     const many = Array.from({ length: 7 }, (_, i) => ({ label: `p${i}`, problems: ['x'] }))
     expect(startupNotice({ fixed: [], problems: many, isIndexUpdated: false, active: [], threshold: 5 }).told).toEqual(['p0', 'p1', 'p2', 'p3', 'p4'])
+    // With nothing fixed there is nothing to commit, so the commit sentence is not said.
+    expect((startupNotice({ fixed: [], problems: many, isIndexUpdated: false, active: [], threshold: 5 }).text ?? '').split('\n')[0]).toBe(
+      'local-issue: 起動時に docs/issue を検査した。直した 0 件、直してほしい所がある 7 件。',
+    )
     expect(startupNotice({ fixed: [], problems: [], isIndexUpdated: false, active: actives.slice(0, 4), threshold: 5 }).text).toBeUndefined()
   })
 })

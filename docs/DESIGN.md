@@ -19,7 +19,7 @@ What it must not add:
 
 One issue is one file (`docs/issue/YYYY-MM-DD-<slug>.md`). The practice is looser than a GitHub-flow tracker: the repository's own TODOs, requests from other projects, and notes that carry a discussion across sessions.
 
-- **status**: `idea` / `open` / `wip` / `blocked` / `resolved` / `discarded`. `blocked` carries a reason (`blocked_by`); `resolved` / `discarded` carry a classification (`close_reason`) and an optional reference (`close_ref`)
+- **status**: `idea` / `open` / `wip` / `blocked` / `resolved` / `discarded`. `blocked` carries a reason (`blocked_by`); `resolved` / `discarded` carry a classification (`close_reason`) and an optional reference (`close_ref`). `blocked_by` and `close_ref` are short: about 30 Japanese characters, an ASCII character counted as 0.5, so they fit an INDEX cell as a reason or a name rather than a paragraph
 - **category**: `idea` / `bug` / `request` / `design` / `task` / `tech-memo`. The writer decides it; the plugin only checks it is one of these
 - **created**: the filing date, the only measure of staleness. When a status changed is not recorded
 - **origin**: the project that asked for it (when filed from another project)
@@ -52,7 +52,7 @@ The frontmatter is read by a small parser of `field: value` lines rather than a 
 
 | What | Where | Why |
 |---|---|---|
-| Fixes (field names only, the destination of a move to archive), and `INDEX.md を更新した` once per place | the `context` of the triggering tool's result | the agent reads it right after that tool; a fix needs no decision from the agent, so one line is enough. The INDEX line keeps a session that commits by path from leaving INDEX out |
+| Fixes (field names only, the destination of a move to archive), and `INDEX.md を更新した (issue の変更と同じ commit に入れる)` once per place | the `context` of the triggering tool's result | the agent reads it right after that tool; a fix needs no decision from the agent, so one line is enough. The INDEX line keeps a session that commits by path from leaving INDEX out |
 | Points to fix (file, what is wrong, what to do) | `$.session.append` into the conversation of the agent that ran the tool (a subagent by its `agentId`, the main session when the subagent cannot be reached) | these are for the agent to fix; they reach the agent that wrote the file or they are not fixed |
 | Startup summary | the `context` of the first prompt | the startup pass belongs to no tool call; it rides on the first request, once. When a hook above drops that prompt, it waits for the next one |
 
@@ -61,21 +61,22 @@ The frontmatter is read by a small parser of `field: value` lines rather than a 
 
 ### Close and archive
 
-A file whose `status` is `resolved` or `discarded` and that has nothing pointed out is moved to `archive/`. It is read again right before the move and moved only if it is still what was judged. `$.fs` can write but not rename or delete, so the move runs `mkdir -p` and `mv -n` through `$.process.run`, and whether it moved is read back from the file system. A move that fails is pointed out with what is known of the cause (the error of `mv`). When `archive/` already has the name, the file is not moved and that is pointed out.
+A file whose `status` is `resolved` or `discarded` and that has nothing pointed out is moved to `archive/`. It is read again right before the move and moved only if it is still what was judged. archive/ is one directory deeper, so the move line also counts the body's relative links (`](../`) and says each needs one more `../`; the body itself is not rewritten. `$.fs` can write but not rename or delete, so the move runs `mkdir -p` and `mv -n` through `$.process.run`, and whether it moved is read back from the file system. A move that fails is pointed out with what is known of the cause (the error of `mv`). When `archive/` already has the name, the file is not moved and that is pointed out.
 
 To reopen an issue, change its `status` inside `archive/` first, then move it back to `docs/issue/`. Moved back with a closing status, it goes straight to `archive/` again at the next check.
 
 ### INDEX.md
 
-Generated in full from the frontmatter of every active file each time, and written only when its text changes. Files with points still to fix are listed too, with invalid values shown as written (a line break inside a cell becomes a space). Order: status (`idea` → `open` → `wip` → `blocked`, then `resolved` / `discarded` kept by a point, then any other value), newest date first, then slug.
+Generated in full from the frontmatter of every active file each time, and written only when its text changes. Columns: `| date | category | status | issue | title | blocked_by |`. `issue` links the slug, because other issues, DRs and commits name an issue by its slug, so it can be picked up from the list as is; `title` is not cut, as it is the only description that tells issues apart in the list. Files with points still to fix are listed too, with invalid values shown as written (a line break inside a cell becomes a space). Order: status (`idea` → `open` → `wip` → `blocked`, then `resolved` / `discarded` kept by a point, then any other value), newest date first, then slug.
 
 ## Consequences
 
 - The added cost of an issue operation is the re-listing and the re-reading of changed files (tens of milliseconds) plus one line when something was fixed
 - What sessions without the plugin or other tools wrote is brought into shape only when a session with the plugin next starts in that repository; those changes appear uncommitted in that session's working copy
-- The startup pass covers every active file of the repository. In a repository whose issues were written in another frontmatter format, the first startup rewrites every file and the INDEX; fields outside the table are removed even with a value (the values stay in the VCS diff)
+- The startup pass covers every active file of the repository. In a repository whose issues were written in another frontmatter format, the first startup rewrites every file and the INDEX; fields outside the table are removed when empty or only a date-time, and kept and pointed out when they hold another value (a reason dropped silently would lose the ground of a decision)
 - Closing changes the file's path
 - When a status changed is not recorded; staleness is measured from the filing date only
+- The repair runs when a tool call returns, so a commit made inside the same Bash call that rewrote an issue comes before the repair: `INDEX.md` (and fixed frontmatter) is left as an uncommitted diff. Commit after the call that rewrote issues has returned
 - There is no check to run before a push (no CLI outside Claude)
 
 ## Limits

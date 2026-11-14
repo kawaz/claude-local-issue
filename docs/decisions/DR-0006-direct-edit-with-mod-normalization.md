@@ -37,7 +37,7 @@ mod が扱うのは `docs/issue/` 直下の `.md` (INDEX.md と README で始ま
 
 ### 3. frontmatter
 
-欄はこの順で、これ以外の欄は mod が消す。値が空の任意欄は書かない。
+欄はこの順で書く。これ以外の欄は、値が空か日時だけなら mod が消す。それ以外の値が入っている欄は消さずに指摘する (値を本文へ移してから欄を消すよう促す。理由を書いた欄が黙って消えると、その issue の判断の根拠が失われるため)。値が空の任意欄は書かない。
 
 | 欄 | 必須 | 値 | 無い・不正な時 |
 |---|---|---|---|
@@ -46,7 +46,7 @@ mod が扱うのは `docs/issue/` 直下の `.md` (INDEX.md と README で始ま
 | `category` | 必須 | `idea` / `bug` / `request` / `design` / `task` / `tech-memo` | 指摘 (既定値を持たない。大文字と前後の空白は直す) |
 | `created` | 必須 | ISO8601 の日付か日時 | ファイル名の日付で補う |
 | `origin` | 任意 | 依頼元のプロジェクト名 | そのまま |
-| `blocked_by` | `status: blocked` の時は必須 | 30 文字以内。裁定待ちは `docs/QUESTIONS.md` のラベルを先頭に書く | `blocked` で無ければ指摘。30 文字を超えたら指摘。`blocked` 以外の status では消す |
+| `blocked_by` | `status: blocked` の時は必須 | 30 文字以内。裁定待ちは `docs/QUESTIONS.md` のラベルを先頭に書く。他の issue を待つ時はその slug を書く | `blocked` で無ければ指摘。30 文字を超えたら指摘。`blocked` 以外の status では消す |
 | `close_reason` | `resolved` / `discarded` の時は必須 | `implemented` / `documented` / `discarded` / `duplicate` | close する status で無い・不正なら指摘。それ以外の status では消す |
 | `close_ref` | 任意 | 30 文字以内。根拠の参照 (DR 番号、版、finding の slug) | 30 文字を超えたら指摘。close する status 以外では消す |
 
@@ -57,6 +57,8 @@ mod が扱うのは `docs/issue/` 直下の `.md` (INDEX.md と README で始ま
 - 次のファイルには触れずに指摘する: frontmatter が閉じていない、frontmatter の中に conflict の印 (`<<<<<<<` `=======` `>>>>>>>` `%%%%%%%` `+++++++` `-------` で始まる行) がある、frontmatter の `---` の前に空行や他の行がある
 - 先頭の BOM は保ったまま、その後ろを frontmatter として読む
 - 日付 (ファイル名、`created`) は暦として正しいものだけを受け入れる
+- 30 文字の上限は日本語で 30 文字程度という意味で、ASCII の文字は 1 文字を 0.5 と数える (英数字だけの slug なら 60 文字まで入る)
+- `blocked_by` と `close_ref` の値が `[値]` の形 (要素が 1 つの配列) なら、括弧を外して直す
 - `status` が不正な間は、`blocked_by` / `close_reason` / `close_ref` を消さない (status を直す途中で理由が失われないように)
 - ファイル名が置き場の形に合わないものは指摘する (mod は改名しない)
 - 「直す」「補う」「消す」は mod がコードで行い、「指摘」は agent に直させる
@@ -64,7 +66,7 @@ mod が扱うのは `docs/issue/` 直下の `.md` (INDEX.md と README で始ま
 
 ### 4. close
 
-`status` が `resolved` か `discarded` で、指摘が 1 つも無いファイルを、mod が `archive/` へ移す。指摘が残っている間は移さない。移した先のパスを知らせる。`archive/` に同じ名前のファイルがあれば、移さずに指摘する。移す直前にファイルを読み直し、判定した時の内容と同じ時だけ移す。
+`status` が `resolved` か `discarded` で、指摘が 1 つも無いファイルを、mod が `archive/` へ移す。指摘が残っている間は移さない。移した先のパスを知らせる。本文に `../` で始まる相対リンクがあれば、その数と、1 段深くなったので直す必要があることも添える (本文は mod が書き換えない)。`archive/` に同じ名前のファイルがあれば、移さずに指摘する。移す直前にファイルを読み直し、判定した時の内容と同じ時だけ移す。
 
 close した issue を開き直す時は、`archive/` の中で `status` を書き換えてから `docs/issue/` へ戻す (close の status のまま戻すと、次の検査でまた `archive/` へ移る)。
 
@@ -72,7 +74,7 @@ close した issue を開き直す時は、`archive/` の中で `status` を書�
 
 active の全ファイルの frontmatter から毎回全体を生成し、内容が変わる時だけ書く。
 
-- 列: `| date | category | status | issue | blocked_by |`。`issue` は `[<title>](./<ファイル名>)` で、title は長くても切らない (一覧で issue を見分ける唯一の説明なので)。`date` はファイル名の日付
+- 列: `| date | category | status | issue | title | blocked_by |`。`issue` は `[<slug>](./<ファイル名>)` (他の issue・DR・commit から issue を指す時の名前が slug なので、一覧からそのまま拾えるようにする)。`title` は長くても切らない (一覧で issue を見分ける唯一の説明なので)。`date` はファイル名の日付
 - 並び: status の順 (`idea` → `open` → `wip` → `blocked`)、同じ status の中は日付の新しい順、同じ日付は slug の順
 - 指摘が残っているファイルも載せる (不正な値はそのまま表示する)
 - 冒頭に「自動生成。手で編集しない」旨を本文として 1 行書く
@@ -90,7 +92,7 @@ active の全ファイルの frontmatter から毎回全体を生成し、内容
 
 ### 7. 知らせ方
 
-- **直したこと**: その tool の結果に付く context に、ファイルごとに直した欄の名前だけを 1 行で書く (例: `local-issue: docs/issue/2026-11-14-foo.md: status を直した、foo を消した`)。archive へ移した時は移動先を書く。INDEX.md を書き換えた時は、その場所ごとに `INDEX.md を更新した` を 1 回だけ添える (パスを絞って commit するセッションが INDEX を取りこぼさないため)。それ以外に INDEX の中身は知らせない
+- **直したこと**: その tool の結果に付く context に、ファイルごとに直した欄の名前だけを 1 行で書く (例: `local-issue: docs/issue/2026-11-14-foo.md: status を直した、foo を消した`)。archive へ移した時は移動先を書く。INDEX.md を書き換えた時は、その場所ごとに `INDEX.md を更新した (issue の変更と同じ commit に入れる)` を 1 回だけ添える (パスを絞って commit するセッションが INDEX を取りこぼさないため)。それ以外に INDEX の中身は知らせない
 - **指摘**: `$.session.append` で、ファイル名・欄・許される値を 1〜2 行で書く。検査を走らせた tool が subagent のものならその subagent に (`agentId`)、それ以外は main に送る。subagent に届けられなかった時は main に送る。同じファイルの同じ指摘は、そのファイルの内容が変わるまで繰り返さない。届けられなかった指摘は「伝えた」ことにせず、次の検査でもう一度送る
 - **起動時**: `session.start` で直したこと・残っている指摘と、active の件数がしきい値 (`CLAUDE_LOCAL_ISSUE_COUNT_THRESHOLD`、既定 5) 以上の時の件数と古い順 3 件を、最初の prompt の時に 1 回だけまとめて足す。ファイルの列挙は全体で 5 件までで、残りは件数で書く。列挙に載らなかった指摘は「伝えた」ことにしない
 - ファイルの呼び方は、cwd のものは `docs/issue/<ファイル名>`、他の場所は絶対パスに揃える

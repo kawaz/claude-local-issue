@@ -36,8 +36,14 @@ const FIELD_ORDER = [
 ] as const
 type FieldName = (typeof FIELD_ORDER)[number]
 
-/** Longest `blocked_by` / `close_ref` (DR-0006 §3): short enough to sit in an INDEX cell. */
+/**
+ * Longest `blocked_by` / `close_ref` (DR-0006 §3): about 30 Japanese
+ * characters, with an ASCII character counted as half (so an ASCII slug fits
+ * up to 60). Short enough to sit in an INDEX cell as a reason, not a paragraph.
+ */
 const SHORT_LIMIT = 30
+/** A one-element YAML list (`[x]`, no comma inside): what is meant is the element. */
+const ONE_ELEMENT_LIST = /^\[([^,[\]]*)\]$/
 /** Longest stretch of a file's own text quoted in what the agent is told (DR-0006 §7). */
 const QUOTE_LIMIT = 40
 /** Most files named in the startup summary (DR-0006 §7). */
@@ -247,10 +253,19 @@ export function yamlString(s: string): string {
   return isPlain ? s : JSON.stringify(s)
 }
 
-/** Code points, so a kana or an emoji counts as one character. */
-function charCount(s: string): number {
-  return [...s].length
+/** The length the limit counts: an ASCII character (below 0x80) is 0.5, any other 1. */
+function shortWidth(v: string): number {
+  let width = 0
+  for (const c of v) width += (c.codePointAt(0) ?? 0) < 0x80 ? 0.5 : 1
+  return width
 }
+
+function isTooLong(v: string): boolean {
+  return shortWidth(v) > SHORT_LIMIT
+}
+
+const tooLongProblem = (key: string, v: string): string =>
+  `${key} が長い (日本語 ${SHORT_LIMIT} 文字相当まで。ASCII は 0.5 文字と数えて今 ${shortWidth(v)})。縮める`
 
 /** The first `# ` heading of a body, outside code fences. */
 function firstHeading(body: string): string | undefined {
@@ -327,10 +342,14 @@ export function normalizeIssue(name: string, text: string): Outcome {
   const parsed = split.kind === 'present' ? parseEntries(split.lines) : { entries: [], strays: [] }
   const removals: string[] = []
   const fields = new Map<string, Entry>()
+  /** Fields outside the table that hold a value: kept as written, in order, after the table's fields. */
+  const others: Entry[] = []
   for (const e of parsed.entries) {
+    const shown = [...e.written].slice(0, QUOTE_LIMIT).join('')
     if (fields.has(e.key)) removals.push(`重複した ${e.key} を消した`)
-    else if (oneOf(FIELD_ORDER, e.key) === undefined) removals.push(`${[...e.written].slice(0, QUOTE_LIMIT).join('')} を消した`)
-    else fields.set(e.key, e)
+    else if (oneOf(FIELD_ORDER, e.key) !== undefined) fields.set(e.key, e)
+    else if (e.extra.length === 0 && (scalar(e.raw) === '' || isIsoDate(scalar(e.raw)))) removals.push(`${shown} を消した`)
+    else others.push(e)
   }
   for (const line of parsed.strays) problems.push(`frontmatter の行 ${quote(line)} は 欄: 値 の形でない。欄の形に直すか消す`)
 
@@ -340,6 +359,19 @@ export function normalizeIssue(name: string, text: string): Outcome {
   /** Keeps a field as written, the lines of a value over several lines included. */
   const keep = (e: Entry): void => {
     out.push(e.raw === '' ? `${e.key}:` : `${e.key}: ${e.raw}`, ...e.extra)
+  }
+  /** The value of `blocked_by` / `close_ref`, the element itself when written as a one-element list. */
+  const unlisted = (e: Entry | undefined): string => {
+    const v = value(e)
+    const m = ONE_ELEMENT_LIST.exec(v)
+    return m === null ? v : scalar(m[1] ?? '')
+  }
+  /** Keeps a `blocked_by` / `close_ref` field, writing a one-element list back as its element. */
+  const keepUnlisted = (e: Entry, v: string): void => {
+    if (ONE_ELEMENT_LIST.test(value(e))) {
+      out.push(`${e.key}: ${yamlString(v)}`)
+      fixes.push(`${e.key} を直した`)
+    } else keep(e)
   }
   /** A value over several lines is kept whole and pointed out, whatever the field. */
   const keepMultiLine = (e: Entry | undefined): boolean => {
@@ -446,25 +478,24 @@ export function normalizeIssue(name: string, text: string): Outcome {
   // invalid status keeps it: the agent is about to fix the status, and the
   // reason must not be lost on the way.
   const blockedEntry = get('blocked_by')
-  const blockedBy = value(blockedEntry)
+  const blockedBy = unlisted(blockedEntry)
   if (keepMultiLine(blockedEntry)) {
     entry.blockedBy = blockedBy
   } else if (status === 'blocked') {
     if (blockedEntry === undefined || blockedBy === '') {
       if (blockedEntry !== undefined) fixes.push('blocked_by を消した')
       problems.push(
-        `status: blocked には blocked_by が要る。frontmatter に blocked_by: を足し、${SHORT_LIMIT} 文字以内で理由を書く (裁定待ちは docs/QUESTIONS.md のラベルを先頭に)`,
+        `status: blocked には blocked_by が要る。frontmatter に blocked_by: を足し、日本語 ${SHORT_LIMIT} 文字相当まで (ASCII は 0.5 文字と数える) で理由を書く (裁定待ちは docs/QUESTIONS.md のラベルを先頭に、他の issue を待つ時はその slug を)`,
       )
     } else {
-      keep(blockedEntry)
+      keepUnlisted(blockedEntry, blockedBy)
       entry.blockedBy = blockedBy
-      if (charCount(blockedBy) > SHORT_LIMIT)
-        problems.push(`blocked_by が ${SHORT_LIMIT} 文字を超えている (${charCount(blockedBy)} 文字)。${SHORT_LIMIT} 文字以内に縮める`)
+      if (isTooLong(blockedBy)) problems.push(tooLongProblem('blocked_by', blockedBy))
     }
   } else if (blockedEntry !== undefined) {
     if (status !== undefined || blockedBy === '') fixes.push('blocked_by を消した')
     else {
-      keep(blockedEntry)
+      keepUnlisted(blockedEntry, blockedBy)
       entry.blockedBy = blockedBy
     }
   }
@@ -482,7 +513,9 @@ export function normalizeIssue(name: string, text: string): Outcome {
     } else {
       keep(reasonEntry)
       if (oneOf(CLOSE_REASONS, reason) === undefined)
-        problems.push(`close_reason の値 ${quote(reason)} は使えない。close_reason を ${list(CLOSE_REASONS)} のどれかに書き換える`)
+        problems.push(
+          `close_reason の値 ${quote(reason)} は使えない。close_reason を ${list(CLOSE_REASONS)} のどれかに書き換える (理由や参照先は close_ref か本文に書く)`,
+        )
     }
   } else if (reasonEntry !== undefined) {
     if (status !== undefined || reason === '') fixes.push('close_reason を消した')
@@ -490,15 +523,14 @@ export function normalizeIssue(name: string, text: string): Outcome {
   }
 
   const refEntry = get('close_ref')
-  const ref = value(refEntry)
+  const ref = unlisted(refEntry)
   if (keepMultiLine(refEntry)) {
     // kept as written and pointed out
   } else if (refEntry !== undefined) {
     if (ref === '' || (status !== undefined && !isClosing)) fixes.push('close_ref を消した')
     else {
-      keep(refEntry)
-      if (charCount(ref) > SHORT_LIMIT)
-        problems.push(`close_ref が ${SHORT_LIMIT} 文字を超えている (${charCount(ref)} 文字)。${SHORT_LIMIT} 文字以内に縮める`)
+      keepUnlisted(refEntry, ref)
+      if (isTooLong(ref)) problems.push(tooLongProblem('close_ref', ref))
     }
   }
 
@@ -507,6 +539,14 @@ export function normalizeIssue(name: string, text: string): Outcome {
   for (const key of FIELD_ORDER) {
     const e = fields.get(key)
     if (e !== undefined && e.written !== key && !fixes.some((f) => f.startsWith(`${key} を`))) fixes.push(`${key} を直した`)
+  }
+  // A field outside the table with a value (a reason, a note) is not dropped:
+  // the value may be the ground of a decision. It stays as written, after the
+  // table's fields, until the agent moves the value to the body. The value is
+  // not quoted in the point, since it may be a long sentence.
+  for (const e of others) {
+    out.push(e.raw === '' ? `${e.written}:` : `${e.written}: ${e.raw}`, ...e.extra)
+    problems.push(`${[...e.written].slice(0, QUOTE_LIMIT).join('')} は使わない欄だが値がある。値を本文へ移してから欄を消す`)
   }
   fixes.push(...removals)
   const frontmatter = out.length === 0 ? '---\n---\n' : `---\n${out.join('\n')}\n---\n`
@@ -552,10 +592,12 @@ function compareEntries(a: IndexEntry, b: IndexEntry): number {
 /** The whole of INDEX.md for the active files. */
 export function renderIndex(entries: readonly IndexEntry[]): string {
   const rows = [...entries].sort(compareEntries).map((e) => {
-    const link = `[${linkText(e.title === '' ? e.name : e.title)}](./${href(e.name)})`
-    return `| ${[cell(e.date), cell(e.category), cell(e.status), link, cell(e.blockedBy)].join(' | ')} |`
+    // The link text is the slug (the name other issues, DRs and commits use);
+    // a file whose name is not of the issue form has no slug and shows its name.
+    const link = `[${linkText(e.slug)}](./${href(e.name)})`
+    return `| ${[cell(e.date), cell(e.category), cell(e.status), link, cell(e.title), cell(e.blockedBy)].join(' | ')} |`
   })
-  return [INDEX_NOTICE, '', '| date | category | status | issue | blocked_by |', '|---|---|---|---|---|', ...rows, ''].join('\n')
+  return [INDEX_NOTICE, '', '| date | category | status | issue | title | blocked_by |', '|---|---|---|---|---|---|', ...rows, ''].join('\n')
 }
 
 // ---------- detection ----------
@@ -677,6 +719,20 @@ export function fileLabel(dir: string, name: string, isCwd: boolean): string {
   return isCwd ? `docs/issue/${shown}` : `${dir}/${shown}`
 }
 
+/**
+ * What is said of a file moved to archive/: its new path, and when its body
+ * has relative links (`](../`), how many and that each needs one more `../`
+ * now that the file sits one directory deeper. The body itself is not changed.
+ */
+export function movedPhrase(destination: string, text: string): string {
+  const split = splitFrontmatter(text)
+  const body = split.kind === 'untouchable' ? text : split.body
+  const links = body.split('](../').length - 1
+  return links === 0
+    ? `${destination} へ移した`
+    : `${destination} へ移した。本文の相対リンク ${links} 個は 1 段深くなったので ../ を ../../ に直す`
+}
+
 /** How a docs/issue/ directory is named: `docs/issue` in the working directory, the absolute path elsewhere. */
 export function dirLabel(dir: string, isCwd: boolean): string {
   return isCwd ? 'docs/issue' : dir
@@ -687,9 +743,9 @@ export function fixLine(label: string, fixes: readonly string[]): string {
   return `${PREFIX}: ${label}: ${fixes.join('、')}`
 }
 
-/** `local-issue: docs/issue: INDEX.md を更新した`, once per place whose INDEX.md was written. */
+/** `local-issue: docs/issue: INDEX.md を更新した (…)`, once per place whose INDEX.md was written. */
 export function indexLine(label: string): string {
-  return `${PREFIX}: ${label}: INDEX.md を更新した`
+  return `${PREFIX}: ${label}: INDEX.md を更新した (issue の変更と同じ commit に入れる)`
 }
 
 /** One line per file: what is wrong and what to do. */
@@ -728,7 +784,9 @@ export function startupNotice(r: StartupReport): { text: string | undefined; tol
   const told: string[] = []
   if (r.fixed.length > 0 || r.problems.length > 0) {
     parts.push(
-      `${PREFIX}: 起動時に docs/issue を検査した。直した ${r.fixed.length} 件、直してほしい所がある ${r.problems.length} 件 (直した分は作業コピーに未 commit の差分として残る)。`,
+      `${PREFIX}: 起動時に docs/issue を検査した。直した ${r.fixed.length} 件、直してほしい所がある ${r.problems.length} 件。${
+        r.fixed.length > 0 ? '直した分は未 commit なので、他の変更と分けて commit する。' : ''
+      }`,
     )
     const lines = [
       ...r.problems.map((p) => ({ line: `- ${p.label}: 直してほしい: ${p.problems.join('。')}`, told: p.label })),

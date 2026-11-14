@@ -2,6 +2,19 @@
 
 All notable changes per release. Follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) conventions.
 
+## [1.0.2] - 2026-11-15
+
+### Changed
+- `INDEX.md` columns are now `| date | category | status | issue | title | blocked_by |`: `issue` links the slug (the name other issues, DRs and commits use; a file name without a slug is shown as is), and `title` holds the whole title in its own column
+- The limit of `blocked_by` and `close_ref` counts an ASCII character (code point below 0x80) as 0.5 and any other as 1, and points out a total over 30 (about 30 Japanese characters; an ASCII slug fits up to 60). The point says how it counts and the current total
+- `blocked_by` / `close_ref` written as a one-element list (`[value]`) is written back as the value and told as fixed; a list of two or more stays one value
+- The first line of the startup summary says that what was fixed is uncommitted and should be committed apart from other changes (only when something was fixed)
+- A field outside the table is removed only when its value is empty or a date-time; a field holding any other value is kept as written (after the table's fields) and pointed out until the value is moved into the body, so a written reason is no longer dropped silently
+- The line telling a move to `archive/` counts the body's relative links (`](../`) and says they need `../../` now (the body is not rewritten)
+- The point on an invalid `close_reason` adds that reasons and references belong in `close_ref` or the body
+- The INDEX line reads `INDEX.md を更新した (issue の変更と同じ commit に入れる)`
+- README: commit after the tool call that rewrites issues has returned; committing inside the same Bash call leaves `INDEX.md` as an uncommitted diff
+
 ## [1.0.1] - 2026-11-15
 
 ### Changed

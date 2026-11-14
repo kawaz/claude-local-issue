@@ -118,10 +118,10 @@ describe('register', () => {
     expect(w.files.get(`${DIR}/2026-11-14-bar.md`)?.text).toBe(fm('title: Bar', 'status: open', 'created: 2026-11-14') + '# Bar\n\nbody\n')
     expect(r.context).toEqual([
       'local-issue: docs/issue/2026-11-14-bar.md: frontmatter を足した、title を補った、status を補った、created を補った',
-      'local-issue: docs/issue: INDEX.md を更新した',
+      'local-issue: docs/issue: INDEX.md を更新した (issue の変更と同じ commit に入れる)',
     ])
     expect(w.appended()).toEqual([expect.stringContaining('local-issue: docs/issue/2026-11-14-bar.md: category が無い')])
-    expect(w.files.get(`${DIR}/INDEX.md`)?.text).toContain('[Bar](./2026-11-14-bar.md)')
+    expect(w.files.get(`${DIR}/INDEX.md`)?.text).toContain('[bar](./2026-11-14-bar.md) | Bar |')
   })
 
   // The same problem of the same content is told once; a change of content
@@ -173,15 +173,19 @@ describe('register', () => {
     expect(w.files.get(`${DIR}/${NAME}`)?.text).toBe(fm('title: Newer', 'status: wip', 'category: bug', 'created: 2026-11-14') + 'newer body\n')
   })
 
-  // A closed file goes to archive/ under the same name, and the move is told.
+  // A closed file goes to archive/ under the same name, and the move is told;
+  // relative links of its body are counted on that line (the body is kept).
   test('a closed file moves to archive/', async ($, on) => {
     const w = world(on, { [`${DIR}/${NAME}`]: GOOD })
     await start($)
-    w.tool = () => w.write(`${DIR}/${NAME}`, GOOD.replace('status: open', 'status: resolved\nclose_reason: implemented'))
+    const closed = fm('title: Foo', 'status: resolved', 'category: bug', 'created: 2026-11-14', 'close_reason: implemented') + 'see [DR](../decisions/DR-0006.md)\n'
+    w.tool = () => w.write(`${DIR}/${NAME}`, closed)
     const r = await $.tool.call({ tool: 'Bash', command: 'a' })
+    expect(w.files.get(`${DIR}/archive/${NAME}`)?.text).toBe(closed)
+    expect(r.context?.[0]).toBe(`local-issue: docs/issue/${NAME}: docs/issue/archive/${NAME} へ移した。本文の相対リンク 1 個は 1 段深くなったので ../ を ../../ に直す`)
     expect(w.files.has(`${DIR}/${NAME}`)).toBe(false)
     expect(w.files.get(`${DIR}/archive/${NAME}`)?.text).toContain('status: resolved')
-    expect(r.context).toEqual([expect.stringContaining(`docs/issue/archive/${NAME} へ移した`), 'local-issue: docs/issue: INDEX.md を更新した'])
+    expect(r.context).toEqual([expect.stringContaining(`docs/issue/archive/${NAME} へ移した`), 'local-issue: docs/issue: INDEX.md を更新した (issue の変更と同じ commit に入れる)'])
     expect(w.files.get(`${DIR}/INDEX.md`)?.text).not.toContain(NAME)
   })
 
@@ -228,7 +232,7 @@ describe('register', () => {
     }
     await $.tool.call({ tool: 'Bash', command: 'a' })
     expect(w.files.get(`${DIR}/2026-11-14-b.md`)?.text).toContain('status: open')
-    expect(w.files.get(`${DIR}/INDEX.md`)?.text).toContain('[B](./2026-11-14-b.md)')
+    expect(w.files.get(`${DIR}/INDEX.md`)?.text).toContain('[b](./2026-11-14-b.md) | B |')
     expect(w.appended()).toEqual([expect.stringContaining('docs/issue/2026-11-14-a.md: 読み書きに失敗した')])
   })
 
@@ -248,8 +252,8 @@ describe('register', () => {
     const r = await $.tool.call({ tool: 'Bash', command: `printf x > ${OTHER}/2026-11-14-new.md` })
     expect(w.files.get(`${OTHER}/2026-11-14-new.md`)?.text).toContain('status: open')
     expect(w.files.get(`${OTHER}/2026-01-01-old.md`)?.text).toBe(old)
-    expect(w.files.get(`${OTHER}/INDEX.md`)?.text).toContain('[New](./2026-11-14-new.md)')
-    expect(r.context).toContain(`local-issue: ${OTHER}: INDEX.md を更新した`)
+    expect(w.files.get(`${OTHER}/INDEX.md`)?.text).toContain('[new](./2026-11-14-new.md) | New |')
+    expect(r.context).toContain(`local-issue: ${OTHER}: INDEX.md を更新した (issue の変更と同じ commit に入れる)`)
   })
 
   // The startup summary rides on the first prompt only.

@@ -19,7 +19,7 @@ kawaz のリポ群で `docs/issue/` の INDEX と status 管理の型を揃え�
 
 issue は 1 件 1 ファイル (`docs/issue/YYYY-MM-DD-<slug>.md`)。運用は GitHub flow のような厳密な管理ではなく、自リポの TODO・他プロジェクトからの依頼・セッションを跨ぐメモを置く一段ゆるいもの。
 
-- **status**: `idea` / `open` / `wip` / `blocked` / `resolved` / `discarded`。`blocked` は理由 (`blocked_by`) を、`resolved` / `discarded` は分類 (`close_reason`) と任意の根拠の参照 (`close_ref`) を伴う
+- **status**: `idea` / `open` / `wip` / `blocked` / `resolved` / `discarded`。`blocked` は理由 (`blocked_by`) を、`resolved` / `discarded` は分類 (`close_reason`) と任意の根拠の参照 (`close_ref`) を伴う。`blocked_by` と `close_ref` は日本語 30 文字相当まで (ASCII の文字は 0.5 と数える) で、INDEX のセルに段落でなく理由か名前として収まる長さにする
 - **category**: `idea` / `bug` / `request` / `design` / `task` / `tech-memo`。書く側が決め、plugin は enum かどうかだけを見る
 - **created**: 起票日。放置の目安はこれだけで、status が変わった時刻は記録しない
 - **origin**: 依頼元のプロジェクト (他プロジェクトからの起票の時)
@@ -52,7 +52,7 @@ frontmatter の読み取りは `欄: 値` の行を読む小さな parser で、
 
 | 何を | どこへ | 理由 |
 |---|---|---|
-| 直したこと (欄の名前だけ、archive への移動先) と、場所ごとに 1 回の `INDEX.md を更新した` | 契機になった tool の結果の `context` | その tool の直後に agent が読む。直したことは agent の判断を要さないので 1 行で足りる。INDEX の行は、パスを絞って commit するセッションが INDEX を取りこぼさないため |
+| 直したこと (欄の名前だけ、archive への移動先) と、場所ごとに 1 回の `INDEX.md を更新した (issue の変更と同じ commit に入れる)` | 契機になった tool の結果の `context` | その tool の直後に agent が読む。直したことは agent の判断を要さないので 1 行で足りる。INDEX の行は、パスを絞って commit するセッションが INDEX を取りこぼさないため |
 | 指摘 (ファイル、何がおかしいか、何をすればよいか) | `$.session.append` で tool を実行した agent の会話 (subagent ならその `agentId`、届けられなければ main) | 指摘は agent に直させるもの。書いた agent に届けないと直されない |
 | 起動時のまとめ | 最初の prompt の `context` | 起動時の修復はどの tool にも結び付かない。最初の request に 1 回だけ載せる。上の hook が prompt を drop した時は次の prompt まで持ち越す |
 
@@ -61,21 +61,22 @@ frontmatter の読み取りは `欄: 値` の行を読む小さな parser で、
 
 ### close と archive
 
-`status` が `resolved` か `discarded` で、指摘が 1 つも無いファイルを `archive/` へ移す。移す直前に読み直し、判定した時の内容と同じ時だけ移す。`$.fs` は書けるが改名・削除ができないので、移動は `$.process.run` で `mkdir -p` と `mv -n` を行い、移ったかはファイルシステムを読み直して確かめる。移せなかった時は分かる範囲の原因 (mv のエラー文など) を添えて指摘する。`archive/` に同じ名前があれば移さずに指摘する。
+`status` が `resolved` か `discarded` で、指摘が 1 つも無いファイルを `archive/` へ移す。移す直前に読み直し、判定した時の内容と同じ時だけ移す。`archive/` は 1 段深いので、移した行には本文の相対リンク (`](../`) の数と、`../` を `../../` に直す必要があることを添える (本文は書き換えない)。`$.fs` は書けるが改名・削除ができないので、移動は `$.process.run` で `mkdir -p` と `mv -n` を行い、移ったかはファイルシステムを読み直して確かめる。移せなかった時は分かる範囲の原因 (mv のエラー文など) を添えて指摘する。`archive/` に同じ名前があれば移さずに指摘する。
 
 開き直す時は、`archive/` の中で `status` を書き換えてから `docs/issue/` へ戻す。close の status のまま戻すと、次の検査でまた `archive/` へ移る。
 
 ### INDEX.md
 
-active な全ファイルの frontmatter から毎回全体を生成し、文面が変わる時だけ書く。指摘が残っているファイルも載せ、不正な値はそのまま表示する (セルの中の改行は空白にする)。並びは status (`idea` → `open` → `wip` → `blocked`、続いて指摘で留まっている `resolved` / `discarded` とその他の値)、日付の新しい順、slug の順。
+active な全ファイルの frontmatter から毎回全体を生成し、文面が変わる時だけ書く。列は `| date | category | status | issue | title | blocked_by |`。`issue` は slug へのリンクにする (他の issue・DR・commit から issue を指す名前が slug なので、一覧からそのまま拾えるように)。`title` は一覧で issue を見分ける唯一の説明なので切らない。指摘が残っているファイルも載せ、不正な値はそのまま表示する (セルの中の改行は空白にする)。並びは status (`idea` → `open` → `wip` → `blocked`、続いて指摘で留まっている `resolved` / `discarded` とその他の値)、日付の新しい順、slug の順。
 
 ## 帰結
 
 - issue 1 件の操作にかかる追加の費用は、一覧の取り直しと変わったファイルの読み直し (数十 ms) と、直した時の 1 行
 - plugin の無いセッションや他の道具が書いた分は、次にそのリポで plugin のあるセッションが起動するまで揃わない。揃えた差分は、そのセッションの作業コピーに未 commit で現れる
-- 起動時に揃える対象は、そのリポの active な全ファイル。別の形式の frontmatter で書かれてきたリポでは、最初の起動で全ファイルと INDEX が書き換わる。表に無い欄は値があっても消える (値は VCS の差分に残る)
+- 起動時に揃える対象は、そのリポの active な全ファイル。別の形式の frontmatter で書かれてきたリポでは、最初の起動で全ファイルと INDEX が書き換わる。表に無い欄は、値が空か日時だけなら消え、それ以外の値があれば残して指摘する (理由を書いた欄が黙って消えると、その issue の判断の根拠が失われるため)
 - close するとファイルのパスが変わる
 - status が変わった時刻は記録しない。放置の目安は起票日だけ
+- 修復は tool の呼び出しが返る時に走るので、issue を書き換えたのと同じ Bash の呼び出しの中で commit すると、commit が修復より先になり、`INDEX.md` (と直した frontmatter) が未 commit の差分として残る。issue を書き換える呼び出しが返ってから commit する
 - push の前に呼べる検査 (Claude の外で動く CLI) は持たない
 
 ## 限界

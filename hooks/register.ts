@@ -22,6 +22,7 @@ import {
   fixLine,
   indexLine,
   issueDirsIn,
+  movedPhrase,
   needsPass,
   normalizeIssue,
   parseThreshold,
@@ -181,7 +182,7 @@ async function settleFile($: $, dir: string, state: Snapshot, name: string, firs
     const failed = await moveToArchive($, dir, name)
     if (failed === undefined) {
       state.files.delete(name)
-      addFixes([`${dir === cwdDir ? `docs/issue/archive/${name}` : `${dir}/archive/${name}`} へ移した`])
+      addFixes([movedPhrase(dir === cwdDir ? `docs/issue/archive/${name}` : `${dir}/archive/${name}`, text)])
       return { label, path, hash: await sha256(text), fixes, problems: [] }
     }
     outcome.problems.push(moveProblem(failed))
